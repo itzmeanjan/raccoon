@@ -238,6 +238,10 @@ public:
   inline constexpr zq_t operator-() const { return Q - this->v; }
   inline constexpr zq_t operator-(const zq_t rhs) const { return *this + (-rhs); }
   inline constexpr void operator-=(const zq_t rhs) { *this = *this - rhs; }
+
+  // Modulo multiplication over prime field Zq
+  inline constexpr zq_t operator*(const zq_t rhs) const { return barrett_reduce(u128::u128_t::from(this->v) * u128::u128_t::from(rhs.v)); }
+  inline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
 };
 
 }
