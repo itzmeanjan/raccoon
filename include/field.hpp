@@ -152,6 +152,8 @@
 #pragma once
 
 #include "u128.hpp"
+#include <cstdint>
+#include <limits>
 
 namespace field {
 
@@ -179,6 +181,46 @@ private:
     const auto reduced = t + q_masked;
 
     return reduced;
+  }
+
+  // Reduces the result of multiplying two 49 -bit Zq elements, resulting into a 98 -bit number,
+  // using Barrett reduction algorithm, which avoids division by any value that is not a power
+  // of 2 s.t. returned value will ∈ [0, Q).
+  //
+  // See https://www.nayuki.io/page/barrett-reduction-algorithm for Barrett reduction algorithm
+  // Collects inspiration from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L73-L134
+  static inline constexpr uint64_t barrett_reduce(const u128::u128_t v)
+  {
+    // Input `v` which is to be reduced, has 98 -bits of significance, from LSB side.
+    // Multiply 98 -bit `v` with 50 -bit R, producing 148 -bit `res`, represented as two 128 -bit words.
+
+    const auto op0_hi = v >> 64;
+    const auto op0_lo = v & u128::u128_t::from(std::numeric_limits<uint64_t>::max());
+
+    const auto op1_hi = u128::u128_t();
+    const auto op1_lo = u128::u128_t::from(R);
+
+    const auto hi = op0_hi * op1_hi;
+    const auto mid = op0_hi * op1_lo + op1_hi * op0_lo;
+    const auto lo = op0_lo * op1_lo;
+
+    const auto mid_hi = mid >> 64;
+    const auto mid_lo = mid & u128::u128_t::from(std::numeric_limits<uint64_t>::max());
+
+    const auto t0 = lo >> 64;
+    const auto t1 = t0 + mid_lo;
+    const auto carry = t1 >> 64;
+
+    const auto res_hi = hi + mid_hi + carry; // Only low 20 -bits are part of result
+    const auto res_lo = lo + (mid_lo << 64); // All 128 -bits are part of result
+
+    // Let's drop low 98 -bits of 148 -bit result, keeping 50 remaining bits
+    const auto res = ((res_hi & u128::u128_t::from(0xffffful)) << 30) | (res_lo >> (2 * Q_BIT_WIDTH));
+    const auto t2 = res * u128::u128_t::from(Q);
+    const auto t3 = (v - t2).to<uint64_t>();
+
+    // t3 must ∈ [0, 2*Q)
+    return reduce_once(t3);
   }
 
 public:
