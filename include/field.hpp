@@ -1,4 +1,5 @@
 #pragma once
+#include "prng.hpp"
 #include "u128.hpp"
 #include <cstdint>
 #include <limits>
@@ -170,6 +171,15 @@ public:
 
   // Comparison operators, see https://en.cppreference.com/w/cpp/language/default_comparisons
   inline constexpr auto operator<=>(const zq_t&) const = default;
+
+  // Generates a random Zq element
+  static inline zq_t random(prng::prng_t& prng)
+  {
+    uint64_t v = 0;
+    prng.read(std::span(reinterpret_cast<uint8_t*>(&v), sizeof(v)));
+
+    return barrett_reduce(u128::u128_t::from(v));
+  }
 };
 
 }
