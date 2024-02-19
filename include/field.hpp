@@ -294,6 +294,7 @@ public:
 
     return static_cast<uint64_t>(a);
   }
+  inline constexpr zq_t operator/(const zq_t rhs) const { return *this * rhs.inv(); }
 };
 
 }
