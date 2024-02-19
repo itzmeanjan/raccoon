@@ -154,6 +154,7 @@
 #include "u128.hpp"
 #include <cstdint>
 #include <limits>
+#include <tuple>
 
 namespace field {
 
@@ -223,6 +224,36 @@ private:
     return reduce_once(t3);
   }
 
+  // Extended GCD algorithm, finding a solution for `ax + by = g` s.t. x, y are provided as input, used for computing multiplicative inverse over prime field
+  // Zq.
+  //
+  // Collects inspiration from https://github.com/itzmeanjan/falcon/blob/cce934dcd092c95808c0bdaeb034312ee7754d7e/include/ff.hpp#L25-L60.
+  static inline constexpr std::tuple<int64_t, int64_t, int64_t> xgcd(const uint64_t x, const uint64_t y)
+  {
+    int64_t old_a = 1, a = 0;
+    int64_t old_b = 0, b = 1;
+    int64_t old_g = x, g = y;
+
+    while (g != 0) {
+      const auto quotient = old_g / g;
+      int64_t tmp = 0;
+
+      tmp = old_a;
+      old_a = a;
+      a = tmp - quotient * a;
+
+      tmp = old_b;
+      old_b = b;
+      b = tmp - quotient * b;
+
+      tmp = old_g;
+      old_g = g;
+      g = tmp - quotient * g;
+    }
+
+    return { old_a, old_b, old_g }; // ax + by = g
+  }
+
 public:
   inline constexpr zq_t() = default;
   inline constexpr zq_t(const uint64_t v) { this->v = v; }
@@ -242,6 +273,27 @@ public:
   // Modulo multiplication over prime field Zq
   inline constexpr zq_t operator*(const zq_t rhs) const { return barrett_reduce(u128::u128_t::from(this->v) * u128::u128_t::from(rhs.v)); }
   inline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
+
+  // Multiplicative inverse over prime field Zq
+  inline constexpr zq_t inv() const
+  {
+    if (this->v == 0) {
+      return 0;
+    }
+
+    int64_t a, b, g;
+    std::tie(a, b, g) = xgcd(this->v, Q);
+    (void)b;
+
+    if (g != 1) {
+      return 0;
+    }
+
+    a += a < 0 ? static_cast<int64_t>(Q) : 0;
+    a -= a >= static_cast<int64_t>(Q) ? static_cast<int64_t>(Q) : 0;
+
+    return static_cast<uint64_t>(a);
+  }
 };
 
 }
