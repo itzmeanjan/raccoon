@@ -295,6 +295,30 @@ public:
     return static_cast<uint64_t>(a);
   }
   inline constexpr zq_t operator/(const zq_t rhs) const { return *this * rhs.inv(); }
+
+  // Modulo exponentiation over prime field Zq
+  inline constexpr zq_t operator^(const size_t n) const
+  {
+    zq_t base = *this;
+
+    const zq_t br[]{ zq_t::one(), base };
+    zq_t res = br[n & 0b1ul];
+
+    const size_t zeros = std::countl_zero(n);
+    const size_t till = 64ul - zeros;
+
+    for (size_t i = 1; i < till; i++) {
+      base = base * base;
+
+      const zq_t br[]{ zq_t::one(), base };
+      res = res * br[(n >> i) & 0b1ul];
+    }
+
+    return res;
+  }
+
+  // Comparison operators, see https://en.cppreference.com/w/cpp/language/default_comparisons
+  inline constexpr auto operator<=>(const zq_t&) const = default;
 };
 
 }
