@@ -8,18 +8,22 @@ namespace field {
 
 constexpr uint32_t Q1 = (1u << 24) - (1u << 18) + 1u;
 constexpr uint32_t Q2 = (1u << 25) - (1u << 18) + 1u;
+
+// Raccoon Modulus `Q` is a composite number defined in section 2.7.2 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf
 constexpr uint64_t Q = static_cast<uint64_t>(Q1) * static_cast<uint64_t>(Q2);
 
 constexpr size_t Q_BIT_WIDTH = std::bit_width(Q);
 
+// Precomputed Barrett Reduction Constant, see https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L16-L23
 constexpr uint64_t R = ((u128::u128_t::from(1ul) << (2 * Q_BIT_WIDTH)) / u128::u128_t::from(Q)).to<uint64_t>();
 
+// Modulo Arithmetic
 struct zq_t
 {
 private:
   uint64_t v = 0;
 
-  // Given a 64 -bit unsigned integer `v` such that `v` ∈ [0, 2*Q), this routine can be invoked for reducing `v` modulo prime Q.
+  // Given a 64 -bit unsigned integer `v` such that `v` ∈ [0, 2*Q), this routine can be invoked for reducing `v` modulo Q.
   //
   // Collects inspiration from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L239-L249
   static inline constexpr uint64_t reduce_once(const uint64_t v)
@@ -72,8 +76,7 @@ private:
     return reduce_once(t3);
   }
 
-  // Extended GCD algorithm, finding a solution for `ax + by = g` s.t. x, y are provided as input, used for computing multiplicative inverse over prime field
-  // Zq.
+  // Extended GCD algorithm, finding a solution for `ax + by = g` s.t. x, y are provided as input, used for computing multiplicative inverse over field Zq.
   //
   // Collects inspiration from https://github.com/itzmeanjan/falcon/blob/cce934dcd092c95808c0bdaeb034312ee7754d7e/include/ff.hpp#L25-L60.
   static inline constexpr std::tuple<int64_t, int64_t, int64_t> xgcd(const uint64_t x, const uint64_t y)
@@ -109,20 +112,20 @@ public:
   static inline constexpr zq_t zero() { return zq_t(); }
   static inline constexpr zq_t one() { return zq_t(1); }
 
-  // Modulo addition over prime field Zq
+  // Modulo addition over field Zq
   inline constexpr zq_t operator+(const zq_t rhs) const { return reduce_once(this->v + rhs.v); }
   inline constexpr void operator+=(const zq_t rhs) { *this = *this + rhs; }
 
-  // Modulo negation/ subtraction over prime field Zq
+  // Modulo negation/ subtraction over field Zq
   inline constexpr zq_t operator-() const { return Q - this->v; }
   inline constexpr zq_t operator-(const zq_t rhs) const { return *this + (-rhs); }
   inline constexpr void operator-=(const zq_t rhs) { *this = *this - rhs; }
 
-  // Modulo multiplication over prime field Zq
+  // Modulo multiplication over field Zq
   inline constexpr zq_t operator*(const zq_t rhs) const { return barrett_reduce(u128::u128_t::from(this->v) * u128::u128_t::from(rhs.v)); }
   inline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
 
-  // Multiplicative inverse over prime field Zq
+  // Multiplicative inverse over field Zq
   inline constexpr zq_t inv() const
   {
     if (this->v == 0) {
@@ -144,7 +147,7 @@ public:
   }
   inline constexpr zq_t operator/(const zq_t rhs) const { return *this * rhs.inv(); }
 
-  // Modulo exponentiation over prime field Zq
+  // Modulo exponentiation over field Zq
   inline constexpr zq_t operator^(const size_t n) const
   {
     zq_t base = *this;
