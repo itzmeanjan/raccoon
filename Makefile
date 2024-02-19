@@ -5,6 +5,8 @@ OPT_FLAGS = -O3 -march=native
 LINK_FLAGS = -flto
 
 I_FLAGS = -I ./include
+SHA3_INC_DIR = ./sha3/include
+DEP_IFLAGS = -I $(SHA3_INC_DIR)
 
 SRC_DIR = include
 RACCOON_SOURCES := $(wildcard $(SRC_DIR)/*.hpp)
@@ -23,9 +25,12 @@ $(BUILD_DIR):
 	mkdir -p $@
 
 $(GTEST_PARALLEL):
-	git submodule update --init
+	git submodule update --init gtest-parallel
 
-$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp $(BUILD_DIR)
+$(SHA3_INC_DIR): $(GTEST_PARALLEL)
+	git submodule update --init sha3
+
+$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp $(BUILD_DIR) $(SHA3_INC_DIR)
 	$(CXX) $(CXX_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(I_FLAGS) $(DEP_IFLAGS) -c $< -o $@
 
 $(TEST_BINARY): $(TEST_OBJECTS)
