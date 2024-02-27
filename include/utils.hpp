@@ -28,4 +28,13 @@ from_le_bytes(std::span<const uint8_t> bytes)
   return res;
 }
 
+// Given an unsigned integer as input, this routine returns TRUTH value only if `v` is power of 2, otherwise it returns FALSE.
+template<typename T>
+static inline constexpr bool
+is_power_of_2(const T v)
+  requires(std::is_unsigned_v<T>)
+{
+  return ((v) & (v - 1)) == 0;
+}
+
 }
