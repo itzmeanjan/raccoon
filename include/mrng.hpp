@@ -13,7 +13,7 @@ namespace mrng {
 // Masked Random Number Generator using Ascon80pq AEAD, following
 // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L13-L187
 template<size_t d>
-  requires(raccoon_utils::is_power_of_2(d))
+  requires((d > 0) && raccoon_utils::is_power_of_2(d))
 struct mrng_t
 {
 private:
@@ -61,6 +61,19 @@ public:
       i_share[4] ^= (key1 << 32) | static_cast<uint64_t>(key2);
       i_share[4] ^= 1; // Domain separator
     }
+  }
+
+  // Returns a 64 -bit random number, following implementation @
+  // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L126-L131
+  inline uint64_t get(const size_t idx)
+  {
+    if (idx > (d - 1)) {
+      return 0;
+    }
+
+    const auto ret = this->state[idx][0];
+    this->state[idx].template permute<6>();
+    return ret;
   }
 };
 
