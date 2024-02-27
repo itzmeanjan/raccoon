@@ -7,7 +7,8 @@ LINK_FLAGS = -flto
 I_FLAGS = -I ./include
 SHA3_INC_DIR = ./sha3/include
 ASCON_INC_DIR = ./ascon/include
-DEP_IFLAGS = -I $(SHA3_INC_DIR) -I $(ASCON_INC_DIR)
+SUBTLE_INC_DIR = ./subtle/include
+DEP_IFLAGS = -I $(SHA3_INC_DIR) -I $(ASCON_INC_DIR) -I $(SUBTLE_INC_DIR)
 
 SRC_DIR = include
 RACCOON_SOURCES := $(wildcard $(SRC_DIR)/*.hpp)
@@ -34,7 +35,10 @@ $(SHA3_INC_DIR): $(GTEST_PARALLEL)
 $(ASCON_INC_DIR): $(SHA3_INC_DIR)
 	git submodule update --init ascon
 
-$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp $(BUILD_DIR) $(SHA3_INC_DIR) $(ASCON_INC_DIR)
+$(SUBTLE_INC_DIR): $(ASCON_INC_DIR)
+	git submodule update --init subtle
+
+$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp $(BUILD_DIR) $(SHA3_INC_DIR) $(ASCON_INC_DIR) $(SUBTLE_INC_DIR)
 	$(CXX) $(CXX_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(I_FLAGS) $(DEP_IFLAGS) -c $< -o $@
 
 $(TEST_BINARY): $(TEST_OBJECTS)
