@@ -14,7 +14,7 @@ namespace mrng {
 // Masked Random Number Generator using Ascon80pq AEAD, following
 // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L13-L187
 template<size_t d>
-  requires((d > 0) && raccoon_utils::is_power_of_2(d))
+  requires((d > 1) && raccoon_utils::is_power_of_2(d))
 struct mrng_t
 {
 private:
