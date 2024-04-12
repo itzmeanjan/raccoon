@@ -9,8 +9,10 @@
 // Refresh and Decoding Gadgets
 namespace gadgets {
 
-// Returns a masked (d -sharing) encoding of polynomial of degree `n` s.t. when decoded to its
+// Returns a masked (d -sharing) encoding of degree `n` polynomial s.t. when decoded to its
 // standard form, each of `n` coefficents of the polynomials will have canonical value of 0.
+//
+// This is an implementation of algorithm 12 of the Raccoon specification.
 //
 // This implementation collects a lot of inspiration from
 // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/racc_core.c#L71-L102
@@ -47,6 +49,21 @@ zero_encoding(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
       }
       d_idx <<= 1;
     }
+  }
+}
+
+// Returns a fresh d -sharing of the input degree `n` polynomial, using `zero_encoding` as a subroutine.
+//
+// This is an implementation of algorithm 11 of the Raccoon specification.
+template<size_t d, size_t n>
+static inline void
+refresh(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
+{
+  std::array<field::zq_t, poly.size()> z{};
+  zero_encoding<d, n>(z, mrng);
+
+  for (size_t i = 0; i < z.size(); i++) {
+    poly[i] += z[i];
   }
 }
 
