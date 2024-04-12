@@ -67,4 +67,22 @@ refresh(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
   }
 }
 
+// Returns the standard representation of a degree `n` polynomial, given the masked (d -sharing) encoding of it.
+//
+// This is an implementation of algorithm 13 of the Raccoon specification.
+template<size_t d, size_t n>
+static inline void
+decode(std::span<const field::zq_t, n * d> shared_poly, std::span<field::zq_t, n> poly)
+{
+  std::fill(poly.begin(), poly.end(), 0);
+
+  for (size_t i = 0; i < d; i++) {
+    const size_t offset = i * n;
+
+    for (size_t j = 0; j < n; j++) {
+      poly[j] += shared_poly[offset + j];
+    }
+  }
+}
+
 }
