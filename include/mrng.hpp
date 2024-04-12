@@ -68,7 +68,7 @@ public:
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L126-L131
   inline uint64_t get(const size_t idx)
   {
-    if (idx > (d - 1)) {
+    if (idx >= (d - 1)) {
       return 0;
     }
 
@@ -82,7 +82,7 @@ public:
   template<size_t n>
   inline void sample_polynomial(const size_t idx, std::span<field::zq_t, n> poly)
   {
-    if (idx > (d - 1)) {
+    if (idx >= (d - 1)) {
       std::fill(poly.begin(), poly.end(), 0);
       return;
     }
