@@ -25,13 +25,14 @@ zero_encoding(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
 
   if constexpr (d > 1) {
     std::array<field::zq_t, n> r{};
+    auto _r = std::span(r);
 
     for (size_t i = 0; i < d; i += 2) {
-      mrng.sample_polynomial(i, r);
+      mrng.sample_polynomial(i, _r);
 
       for (size_t j = 0; j < n; j++) {
-        poly[(i + 0) * n + j] += r[j];
-        poly[(i + 1) * n + j] -= r[j];
+        poly[(i + 0) * n + j] += _r[j];
+        poly[(i + 1) * n + j] -= _r[j];
       }
     }
 
@@ -39,11 +40,11 @@ zero_encoding(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
     while (d_idx < d) {
       for (size_t i = 0; i < d; i += 2 * d_idx) {
         for (size_t j = i; j < i + d_idx; j++) {
-          mrng.sample_polynomial(j, r);
+          mrng.sample_polynomial(j, _r);
 
           for (size_t k = 0; k < n; k++) {
-            poly[(j + 0) * n + k] += r[k];
-            poly[(j + d_idx) * n + k] -= r[k];
+            poly[(j + 0) * n + k] += _r[k];
+            poly[(j + d_idx) * n + k] -= _r[k];
           }
         }
       }
