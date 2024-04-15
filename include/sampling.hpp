@@ -58,4 +58,34 @@ expandA(std::span<const uint8_t, 𝜅 / 8> seed, std::span<field::zq_t, k * l * 
   }
 }
 
+// Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for uniform sampling a degree `n` polynomial s.t. each of its
+// coefficients ∈ [-2^(u-1), 2^(u-1)), following algorithm 7 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+template<size_t n, size_t u, size_t 𝜅>
+static inline void
+sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎, std::span<int64_t, n> f)
+  requires(u > 0)
+{
+  shake256::shake256_t xof;
+  xof.absorb(hdr);
+  xof.absorb(𝜎);
+  xof.finalize();
+
+  constexpr uint64_t mask_msb = 1ul << (u - 1);
+  constexpr uint64_t mask_lsb = mask_msb - 1;
+
+  constexpr size_t squeezable_bytes = (u + 7) / 8;
+  std::array<uint8_t, squeezable_bytes> b{};
+
+  for (size_t i = 0; i < n; i++) {
+    xof.squeeze(b);
+
+    const uint64_t b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
+    const auto msb = static_cast<int64_t>(b_word & mask_msb);
+    const auto lsb = static_cast<int64_t>(b_word & mask_lsb);
+
+    const auto f_i = lsb - msb;
+    f[i] = f_i;
+  }
+}
+
 }
