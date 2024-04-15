@@ -1,6 +1,10 @@
 #pragma once
 #include "field.hpp"
+#include "gadgets.hpp"
+#include "mrng.hpp"
+#include "prng.hpp"
 #include "shake256.hpp"
+#include "subtle.hpp"
 #include "utils.hpp"
 #include <array>
 #include <cstdint>
@@ -85,6 +89,48 @@ sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎
 
     const auto f_i = lsb - msb;
     f[i] = f_i;
+  }
+}
+
+// Adds small uniform noise to each share of the `d` -sharing (masked) polynomial `a` s.t. `row_cnt` of them make up the input polynomial vector `v`, while
+// implementing Sum of Uniforms (SU) distribution in masked domain, following algorithm 8 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+//
+// Each time noise is added polynomials are refreshed and this operation is repeated `rep` -many times.
+template<size_t row_cnt, size_t d, size_t n, size_t u, size_t rep, size_t 𝜅>
+static inline void
+add_rep_noise(std::span<field::zq_t, row_cnt * n * d> vec, prng::prng_t& prng, mrng::mrng_t<d>& mrng)
+{
+  std::array<uint8_t, 𝜅 / 8> 𝜎{};
+  std::array<int64_t, n> poly_u{};
+
+  for (size_t i = 0; i < row_cnt; i++) {
+    const size_t row_begin = i * (n * d);
+
+    for (size_t i_rep = 0; i_rep < rep; i_rep++) {
+      for (size_t j = 0; j < d; j++) {
+        const size_t share_begin = row_begin + (j * n);
+
+        prng.read(𝜎);
+
+        uint64_t hdr_u = 0;
+        hdr_u |= (static_cast<uint64_t>(j) << 24) | (static_cast<uint64_t>(i) << 16) | (static_cast<uint64_t>(i_rep) << 8) | (static_cast<uint64_t>('u') << 0);
+
+        sampleU<n, u, 𝜅>(std::span<const uint8_t, sizeof(hdr_u)>(reinterpret_cast<uint8_t*>(&hdr_u), sizeof(hdr_u)), 𝜎, poly_u);
+
+        for (size_t k = 0; k < n; k++) {
+          const auto coeff = static_cast<int64_t>(vec[share_begin + k].raw()) + poly_u[k];
+
+          const auto is_lt_zero = -(static_cast<uint64_t>(coeff) >> ((sizeof(coeff) * 8) - 1));
+          const auto is_ge_q = subtle::ct_ge<uint64_t, uint64_t>(static_cast<uint64_t>(coeff & ~is_lt_zero), field::Q);
+
+          const auto normalized_coeff = static_cast<uint64_t>(static_cast<int64_t>(field::Q & is_lt_zero) + coeff - static_cast<int64_t>(field::Q & is_ge_q));
+
+          vec[share_begin + k] = field::zq_t(normalized_coeff);
+        }
+      }
+
+      gadgets::refresh<d, n>(std::span<field::zq_t, n * d>(vec.subspan(row_begin, n * d)), mrng);
+    }
   }
 }
 

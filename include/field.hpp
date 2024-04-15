@@ -180,6 +180,9 @@ public:
 
     return barrett_reduce(u128::u128_t::from(v));
   }
+
+  // Returns the underlying value held in canonical form.
+  inline constexpr uint64_t raw() { return this->v; }
 };
 
 }
