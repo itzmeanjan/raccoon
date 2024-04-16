@@ -14,7 +14,7 @@ struct u128_t
 {
 private:
 #ifdef __SIZEOF_INT128__
-  using uint128 = unsigned __int128;
+  __extension__ using uint128 = unsigned __int128;
   uint128 data = 0;
 #else
   uint64_t hi = 0;

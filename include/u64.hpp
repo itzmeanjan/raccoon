@@ -11,7 +11,7 @@ mul_full_u64(const uint64_t lhs, const uint64_t rhs)
 {
 #ifdef __SIZEOF_INT128__
 
-  using uint128 = unsigned __int128;
+  __extension__ using uint128 = unsigned __int128;
 
   const auto res = static_cast<uint128>(lhs) * static_cast<uint128>(rhs);
   const uint64_t res_hi = static_cast<uint64_t>(res >> 64);
