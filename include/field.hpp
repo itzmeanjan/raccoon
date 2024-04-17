@@ -182,7 +182,7 @@ public:
   }
 
   // Returns the underlying value held in canonical form.
-  inline constexpr uint64_t raw() { return this->v; }
+  inline constexpr uint64_t raw() const { return this->v; }
 };
 
 }
