@@ -46,6 +46,14 @@ encode_public_key(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::
 
     t_idx++;
   }
+
+  if (buf_sig_bitcnt == buf_max_sig_bitcnt) {
+    raccoon_utils::to_le_bytes(buffer, pkey.subspan(pkey_idx, buf_max_sig_bytes));
+
+    pkey_idx += buf_max_sig_bytes;
+    buf_sig_bitcnt = 0;
+    buffer = 0;
+  }
 }
 
 // Given a serialized public key, thir routine helps in deserializing it, producing (seed, t).
@@ -64,6 +72,7 @@ decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅
 
   constexpr size_t buf_max_sig_bitcnt = std::lcm(coeff_sig_bitcnt, std::numeric_limits<uint8_t>::digits);
   constexpr size_t buf_max_sig_bytes = buf_max_sig_bitcnt / std::numeric_limits<uint8_t>::digits;
+  constexpr size_t dec_coeffs_per_round = buf_max_sig_bitcnt / coeff_sig_bitcnt;
 
   size_t t_idx = 0;
   size_t pkey_idx = seed.size();
@@ -71,11 +80,11 @@ decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅
   static_assert(buf_max_sig_bitcnt <= std::numeric_limits<uint64_t>::digits, "Can't deserialize public key from bytes using this method !");
 
   while (pkey_idx < pkey.size()) {
-    const auto buffer = raccoon_utils::from_le_bytes<uint64_t>(pkey.subspan(pkey_idx, buf_max_sig_bytes));
+    auto buffer = raccoon_utils::from_le_bytes<uint64_t>(pkey.subspan(pkey_idx, buf_max_sig_bytes));
     pkey_idx += buf_max_sig_bytes;
 
-    while (t_idx < t.size()) {
-      t[t_idx] = buffer & coeff_sig_bitmask;
+    for (size_t i = 0; i < dec_coeffs_per_round; i++) {
+      t[t_idx] = field::zq_t(buffer & coeff_sig_bitmask);
       buffer >>= coeff_sig_bitcnt;
 
       t_idx++;
