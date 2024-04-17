@@ -1,4 +1,5 @@
 #pragma once
+#include "field.hpp"
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -35,6 +36,14 @@ is_power_of_2(const T v)
   requires(std::is_unsigned_v<T>)
 {
   return ((v) & (v - 1)) == 0;
+}
+
+// Compile-time compute Raccoon public key byte length.
+template<size_t 𝜅, size_t k, size_t n, size_t 𝜈t>
+static inline constexpr size_t
+get_pkey_byte_len()
+{
+  return (𝜅 + k * n * (field::Q_BIT_WIDTH - 𝜈t)) / 8;
 }
 
 }
