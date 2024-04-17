@@ -1,5 +1,6 @@
 #pragma once
 #include "field.hpp"
+#include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <cstring>
@@ -11,22 +12,30 @@ namespace raccoon_utils {
 // Given a byte array of length n (>=0), this routine copies input bytes into destination word, of unsigned type T,
 // while placing bytes following little-endian ordering.
 template<typename T>
-static inline T
+static inline constexpr T
 from_le_bytes(std::span<const uint8_t> bytes)
-  requires(std::is_unsigned_v<T>)
+  requires(std::is_unsigned_v<T> && (std::endian::native == std::endian::little))
 {
   T res = 0;
-  const size_t copyable = std::min(sizeof(res), bytes.size());
+  auto _res = std::span<uint8_t>(reinterpret_cast<uint8_t*>(&res), sizeof(res));
 
-  if constexpr (std::endian::native == std::endian::little) {
-    std::memcpy(&res, bytes.data(), copyable);
-  } else {
-    for (size_t i = 0; i < copyable; i++) {
-      res |= static_cast<T>(bytes[i]) << ((sizeof(res) - i - 1) * 8);
-    }
-  }
+  const size_t copyable = std::min(sizeof(res), bytes.size());
+  std::copy_n(bytes.begin(), copyable, _res.begin());
 
   return res;
+}
+
+// Given an unsigned integer as input, this routine copies source bytes, following little-endian order, into destination
+// byte array of length n (>=0).
+template<typename T>
+static inline constexpr void
+to_le_bytes(T v, std::span<uint8_t> bytes)
+  requires(std::is_unsigned_v<T> && (std::endian::native == std::endian::little))
+{
+  auto _v = std::span<uint8_t>(reinterpret_cast<uint8_t*>(&v), sizeof(v));
+
+  const size_t copyable = std::min(sizeof(v), bytes.size());
+  std::copy_n(_v.begin(), copyable, bytes.begin());
 }
 
 // Given an unsigned integer as input, this routine returns TRUTH value only if `v` is power of 2, otherwise it returns FALSE.
