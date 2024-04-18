@@ -55,4 +55,13 @@ get_pkey_byte_len()
   return (𝜅 + k * n * (field::Q_BIT_WIDTH - 𝜈t)) / 8;
 }
 
+// Compile-time compute d -sharing Raccoon secret key byte length.
+template<size_t 𝜅, size_t k, size_t l, size_t d, size_t n, size_t 𝜈t>
+static inline constexpr size_t
+get_skey_byte_len()
+  requires(d > 0)
+{
+  return get_pkey_byte_len<𝜅, k, n, 𝜈t>() + ((d - 1) * 𝜅 + l * n * field::Q_BIT_WIDTH) / 8;
+}
+
 }
