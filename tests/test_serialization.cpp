@@ -1,7 +1,7 @@
 #include "ntt.hpp"
+#include "prng.hpp"
 #include "serialization.hpp"
 #include <gtest/gtest.h>
-#include <iostream>
 
 // Generate a valid random public key in form of `(seed, t)`, serialize it as bytes and finally attempt to deserialize it,
 // ensuring both original and deserialized public key components match.
@@ -32,10 +32,6 @@ test_encode_decode_public_key()
 
   EXPECT_EQ(exp_seed, comp_seed);
   EXPECT_EQ(exp_t, comp_t);
-
-  for (size_t i = 0; i < exp_t.size(); i++) {
-    std::cout << exp_t[i].raw() << "\t" << comp_t[i].raw() << "\n";
-  }
 }
 
 TEST(RaccoonSign, EncodeDecodePublicKey)
@@ -43,4 +39,34 @@ TEST(RaccoonSign, EncodeDecodePublicKey)
   test_encode_decode_public_key<128, 5, ntt::N, 42>();
   test_encode_decode_public_key<192, 7, ntt::N, 42>();
   test_encode_decode_public_key<256, 9, ntt::N, 42>();
+}
+
+template<size_t 𝜅, size_t l, size_t n>
+static void
+test_unmasked_secret_key_vector_compression_decompression()
+{
+  // Because secret key vector is unmasked
+  constexpr size_t d = 1;
+
+  std::array<field::zq_t, l * d * n> exp_s{};
+  std::array<uint8_t, ((d - 1) * 𝜅 + l * n * field::Q_BIT_WIDTH) / 8> s_c{};
+  std::array<field::zq_t, l * d * n> com_s{};
+
+  prng::prng_t prng;
+
+  for (size_t i = 0; i < exp_s.size(); i++) {
+    exp_s[i] = field::zq_t::random(prng);
+  }
+
+  serialization::mask_compress<𝜅, l, d, n>(exp_s, s_c, prng);
+  serialization::mask_decompress<𝜅, l, d, n>(s_c, com_s);
+
+  EXPECT_EQ(exp_s, com_s);
+}
+
+TEST(RaccoonSign, UnmaskedSecretKeyVectorCompressionAndDecompression)
+{
+  test_unmasked_secret_key_vector_compression_decompression<128, 5, ntt::N>();
+  test_unmasked_secret_key_vector_compression_decompression<192, 7, ntt::N>();
+  test_unmasked_secret_key_vector_compression_decompression<256, 9, ntt::N>();
 }
