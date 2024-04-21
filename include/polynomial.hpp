@@ -1,6 +1,8 @@
 #pragma once
 #include "field.hpp"
 #include "prng.hpp"
+#include "shake256.hpp"
+#include "utils.hpp"
 
 namespace polynomial {
 
@@ -100,6 +102,32 @@ public:
   inline constexpr field::zq_t operator[](const size_t idx) const { return this->coeffs[idx]; }
   inline constexpr size_t size() const { return N; }
 
+  // Addition of two polynomials.
+  inline constexpr polynomial_t operator+(const polynomial_t& rhs) const
+  {
+    polynomial_t res{};
+    for (size_t i = 0; i < res.size(); i++) {
+      res[i] = (*this)[i] + rhs[i];
+    }
+
+    return res;
+  }
+
+  inline constexpr void operator+=(const polynomial_t& rhs) { *this = *this + rhs; }
+
+  // Subtraction of one polynomial from another one.
+  inline constexpr polynomial_t operator-(const polynomial_t& rhs) const
+  {
+    polynomial_t res{};
+    for (size_t i = 0; i < res.size(); i++) {
+      res[i] = (*this)[i] - rhs[i];
+    }
+
+    return res;
+  }
+
+  inline constexpr void operator-=(const polynomial_t& rhs) { *this = *this - rhs; }
+
   // Applies number theoretic transform using Cooley-Tukey algorithm, producing polynomial f' s.t. its coefficients are placed in bit-reversed order.
   //
   // Note, this routine mutates input i.e. it's an in-place NTT implementation.
@@ -152,6 +180,35 @@ public:
 
     for (size_t i = 0; i < this->size(); i++) {
       (*this)[i] *= INV_N;
+    }
+  }
+
+  // Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for mapping them to a degree n-1 polynomial f, following algorithm 5 of
+  // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+  //
+  // This routine is invoked when expanding seed for computing matrix A.
+  template<size_t 𝜅>
+  inline constexpr void sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
+  {
+    shake256::shake256_t xof;
+    xof.absorb(hdr);
+    xof.absorb(𝜎);
+    xof.finalize();
+
+    for (size_t i = 0; i < this->size(); i++) {
+      uint64_t f_i = 0;
+
+      do {
+        std::array<uint8_t, (field::Q_BIT_WIDTH + 7) / 8> b{};
+        xof.squeeze(b);
+
+        constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+
+        const auto b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
+        f_i = b_word & mask49;
+      } while (f_i >= field::Q);
+
+      (*this)[i] = f_i;
     }
   }
 
