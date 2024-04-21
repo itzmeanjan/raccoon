@@ -7,6 +7,15 @@
 // Refresh and Decoding Gadgets
 namespace gadgets {
 
+// Returns a polynomial s.t. each coefficients are set to 0.
+template<size_t d>
+static inline constexpr void
+zero_encoding(std::span<polynomial::polynomial_t, d> masked_poly)
+  requires(d == 1)
+{
+  masked_poly[0].fill_with(0);
+}
+
 // Returns a masked (d -sharing) encoding of polynomial s.t. when decoded to its standard form, each of `n` coefficents of the polynomials will have canonical
 // value of 0.
 //
@@ -17,7 +26,7 @@ namespace gadgets {
 template<size_t d>
 static inline void
 zero_encoding(std::span<polynomial::polynomial_t, d> masked_poly, mrng::mrng_t<d>& mrng)
-  requires(raccoon_utils::is_power_of_2(d) && (d > 0))
+  requires(raccoon_utils::is_power_of_2(d) && (d > 1))
 {
   for (size_t i = 0; i < masked_poly.size(); i++) {
     masked_poly[i].fill_with(0);
@@ -49,12 +58,22 @@ zero_encoding(std::span<polynomial::polynomial_t, d> masked_poly, mrng::mrng_t<d
   }
 }
 
+// Because this is requesting refresh of shares in an unmasked polynomial, it doesn't do anything.
+template<size_t d>
+static inline constexpr void
+refresh(std::span<polynomial::polynomial_t, d> masked_poly)
+  requires(d == 1)
+{
+  (void)masked_poly;
+}
+
 // Returns a fresh d -sharing of the input polynomial, using `zero_encoding` as a subroutine.
 //
 // This is an implementation of algorithm 11 of the Raccoon specification.
 template<size_t d>
 static inline void
 refresh(std::span<polynomial::polynomial_t, d> masked_poly, mrng::mrng_t<d>& mrng)
+  requires(d > 1)
 {
   std::array<polynomial::polynomial_t, masked_poly.size()> z{};
   zero_encoding<d>(z, mrng);
@@ -70,6 +89,7 @@ refresh(std::span<polynomial::polynomial_t, d> masked_poly, mrng::mrng_t<d>& mrn
 template<size_t d>
 static inline polynomial::polynomial_t
 decode(std::span<const polynomial::polynomial_t, d> masked_poly)
+  requires(d > 0)
 {
   polynomial::polynomial_t poly{};
 
