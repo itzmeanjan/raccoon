@@ -1,89 +1,83 @@
 #pragma once
 #include "field.hpp"
 #include "mrng.hpp"
+#include "polynomial.hpp"
 #include "utils.hpp"
-#include <algorithm>
-#include <array>
-#include <cstddef>
 
 // Refresh and Decoding Gadgets
 namespace gadgets {
 
-// Returns a masked (d -sharing) encoding of degree `n` polynomial s.t. when decoded to its
-// standard form, each of `n` coefficents of the polynomials will have canonical value of 0.
+// Returns a masked (d -sharing) encoding of polynomial s.t. when decoded to its standard form, each of `n` coefficents of the polynomials will have canonical
+// value of 0.
 //
 // This is an implementation of algorithm 12 of the Raccoon specification.
 //
 // This implementation collects a lot of inspiration from
 // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/racc_core.c#L71-L102
-template<size_t d, size_t n>
+template<size_t d>
 static inline void
-zero_encoding(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
+zero_encoding(std::span<polynomial::polynomial_t, d> masked_poly, mrng::mrng_t<d>& mrng)
   requires(raccoon_utils::is_power_of_2(d) && (d > 0))
 {
-  std::fill(poly.begin(), poly.end(), 0);
+  for (size_t i = 0; i < masked_poly.size(); i++) {
+    masked_poly[i].fill_with(0);
+  }
 
-  if constexpr (d > 1) {
-    std::array<field::zq_t, n> r{};
-    auto _r = std::span(r);
+  if constexpr (masked_poly.size() > 1) {
+    polynomial::polynomial_t r{};
 
-    for (size_t i = 0; i < d; i += 2) {
-      mrng.sample_polynomial(i, _r);
+    for (size_t i = 0; i < masked_poly.size(); i += 2) {
+      r.sample_polynomial(i, mrng);
 
-      for (size_t j = 0; j < n; j++) {
-        poly[(i + 0) * n + j] += _r[j];
-        poly[(i + 1) * n + j] -= _r[j];
-      }
+      masked_poly[i] += r;
+      masked_poly[i + 1] -= r;
     }
 
     size_t d_idx = 2;
-    while (d_idx < d) {
-      for (size_t i = 0; i < d; i += 2 * d_idx) {
+    while (d_idx < masked_poly.size()) {
+      for (size_t i = 0; i < masked_poly.size(); i += 2 * d_idx) {
         for (size_t j = i; j < i + d_idx; j++) {
-          mrng.sample_polynomial(j, _r);
+          r.sample_polynomial(j, mrng);
 
-          for (size_t k = 0; k < n; k++) {
-            poly[(j + 0) * n + k] += _r[k];
-            poly[(j + d_idx) * n + k] -= _r[k];
-          }
+          masked_poly[j] += r;
+          masked_poly[j + d_idx] -= r;
         }
       }
+
       d_idx <<= 1;
     }
   }
 }
 
-// Returns a fresh d -sharing of the input degree `n` polynomial, using `zero_encoding` as a subroutine.
+// Returns a fresh d -sharing of the input polynomial, using `zero_encoding` as a subroutine.
 //
 // This is an implementation of algorithm 11 of the Raccoon specification.
-template<size_t d, size_t n>
+template<size_t d>
 static inline void
-refresh(std::span<field::zq_t, n * d> poly, mrng::mrng_t<d>& mrng)
+refresh(std::span<polynomial::polynomial_t, d> masked_poly, mrng::mrng_t<d>& mrng)
 {
-  std::array<field::zq_t, poly.size()> z{};
-  zero_encoding<d, n>(z, mrng);
+  std::array<polynomial::polynomial_t, masked_poly.size()> z{};
+  zero_encoding<d>(z, mrng);
 
   for (size_t i = 0; i < z.size(); i++) {
-    poly[i] += z[i];
+    masked_poly[i] += z[i];
   }
 }
 
-// Returns the standard representation of a degree `n` polynomial, given the masked (d -sharing) encoding of it.
+// Returns the standard representation of a masked (d -sharing) polynomial.
 //
 // This is an implementation of algorithm 13 of the Raccoon specification.
-template<size_t d, size_t n>
-static inline void
-decode(std::span<const field::zq_t, n * d> shared_poly, std::span<field::zq_t, n> poly)
+template<size_t d>
+static inline polynomial::polynomial_t
+decode(std::span<const polynomial::polynomial_t, d> masked_poly)
 {
-  std::fill(poly.begin(), poly.end(), 0);
+  polynomial::polynomial_t poly{};
 
-  for (size_t i = 0; i < d; i++) {
-    const size_t offset = i * n;
-
-    for (size_t j = 0; j < n; j++) {
-      poly[j] += shared_poly[offset + j];
-    }
+  for (size_t i = 0; i < masked_poly.size(); i++) {
+    poly += masked_poly[i];
   }
+
+  return poly;
 }
 
 }
