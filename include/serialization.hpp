@@ -1,5 +1,5 @@
 #pragma once
-#include "field.hpp"
+#include "polynomial.hpp"
 #include "prng.hpp"
 #include "sampling.hpp"
 #include "utils.hpp"
@@ -8,11 +8,11 @@
 namespace serialization {
 
 // Given a public key of form (seed, t), this routine helps in serializing it, producing a byte array.
-template<size_t 𝜅, size_t k, size_t n, size_t 𝜈t>
+template<size_t 𝜅, size_t k, size_t 𝜈t>
 static inline constexpr void
 encode_public_key(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed,
-                  std::span<const field::zq_t, k * n> t,
-                  std::span<uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, n, 𝜈t>()> pkey)
+                  std::span<const polynomial::polynomial_t, k> t,
+                  std::span<uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>()> pkey)
 {
   // Serialize `seed`
   std::copy_n(seed.begin(), seed.size(), pkey.begin());
@@ -33,16 +33,18 @@ encode_public_key(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::
   static_assert(buf_max_sig_bytes <= sizeof(buffer), "Can't serialize public key into bytes using this method !");
 
   while (t_idx < t.size()) {
-    if (buf_sig_bitcnt == buf_max_sig_bitcnt) {
-      raccoon_utils::to_le_bytes(buffer, pkey.subspan(pkey_idx, buf_max_sig_bytes));
+    for (size_t c_idx = 0; c_idx < polynomial::N; c_idx++) {
+      if (buf_sig_bitcnt == buf_max_sig_bitcnt) {
+        raccoon_utils::to_le_bytes(buffer, pkey.subspan(pkey_idx, buf_max_sig_bytes));
 
-      pkey_idx += buf_max_sig_bytes;
-      buf_sig_bitcnt = 0;
-      buffer = 0;
+        pkey_idx += buf_max_sig_bytes;
+        buf_sig_bitcnt = 0;
+        buffer = 0;
+      }
+
+      buffer |= (t[t_idx][c_idx].raw() & coeff_sig_bitmask) << buf_sig_bitcnt;
+      buf_sig_bitcnt += coeff_sig_bitcnt;
     }
-
-    buffer |= (t[t_idx].raw() & coeff_sig_bitmask) << buf_sig_bitcnt;
-    buf_sig_bitcnt += coeff_sig_bitcnt;
 
     t_idx++;
   }
@@ -57,11 +59,11 @@ encode_public_key(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::
 }
 
 // Given a serialized public key, thir routine helps in deserializing it, producing (seed, t).
-template<size_t 𝜅, size_t k, size_t n, size_t 𝜈t>
+template<size_t 𝜅, size_t k, size_t 𝜈t>
 static inline constexpr void
-decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, n, 𝜈t>()> pkey,
+decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>()> pkey,
                   std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed,
-                  std::span<field::zq_t, k * n> t)
+                  std::span<polynomial::polynomial_t, k> t)
 {
   // Deserialize `seed`
   std::copy_n(pkey.begin(), seed.size(), seed.begin());
@@ -84,7 +86,7 @@ decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅
     pkey_idx += buf_max_sig_bytes;
 
     for (size_t i = 0; i < dec_coeffs_per_round; i++) {
-      t[t_idx] = field::zq_t(buffer & coeff_sig_bitmask);
+      t[t_idx >> polynomial::LOG2N][t_idx & (polynomial::N - 1)] = field::zq_t(buffer & coeff_sig_bitmask);
       buffer >>= coeff_sig_bitcnt;
 
       t_idx++;
