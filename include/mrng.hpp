@@ -74,30 +74,6 @@ public:
     this->state[idx].template permute<6>();
     return ret;
   }
-
-  // Uniform random sampling of degree n-1 polynomial, following implementation @
-  // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
-  template<size_t n>
-  inline void sample_polynomial(const size_t idx, std::span<field::zq_t, n> poly)
-  {
-    if (idx >= (d - 1)) {
-      std::fill(poly.begin(), poly.end(), 0);
-      return;
-    }
-
-    for (size_t i = 0; i < n; i++) {
-      uint64_t poly_i = 0;
-
-      do {
-        constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
-        const auto v = this->get(idx);
-
-        poly_i = v & mask49;
-      } while (poly_i >= field::Q);
-
-      poly[i] = poly_i;
-    }
-  }
 };
 
 }

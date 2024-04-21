@@ -1,5 +1,6 @@
 #pragma once
 #include "field.hpp"
+#include "mrng.hpp"
 #include "prng.hpp"
 #include "shake256.hpp"
 #include "utils.hpp"
@@ -101,6 +102,9 @@ public:
   // Access coefficients of degree 511 polynomial.
   inline constexpr field::zq_t operator[](const size_t idx) const { return this->coeffs[idx]; }
   inline constexpr size_t size() const { return N; }
+
+  // Same as std::memset, but over polynomial coefficients.
+  inline constexpr void fill_with(field::zq_t v) { std::fill(this->coeffs.begin(), this->coeffs.end(), v); }
 
   // Addition of two polynomials.
   inline constexpr polynomial_t operator+(const polynomial_t& rhs) const
@@ -209,6 +213,31 @@ public:
       } while (f_i >= field::Q);
 
       (*this)[i] = f_i;
+    }
+  }
+
+  // Uniform random sampling of degree n-1 polynomial using a Masked Random Number Generator, following implementation @
+  // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
+  template<size_t d>
+  inline constexpr void sample_polynomial(const size_t idx, mrng::mrng_t<d>& mrng)
+  {
+    if (idx >= (d - 1)) {
+      this->fill_with(0);
+      return;
+    }
+
+    constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+
+    for (size_t i = 0; i < this->size(); i++) {
+      uint64_t poly_i = 0;
+
+      do {
+        const auto v = mrng.get(idx);
+
+        poly_i = v & mask49;
+      } while (poly_i >= field::Q);
+
+      (*this)[i] = poly_i;
     }
   }
 
