@@ -1,4 +1,4 @@
-#include "ntt.hpp"
+#include "polynomial.hpp"
 #include "prng.hpp"
 #include "serialization.hpp"
 #include <gtest/gtest.h>
@@ -36,9 +36,9 @@ test_encode_decode_public_key()
 
 TEST(RaccoonSign, EncodeDecodePublicKey)
 {
-  test_encode_decode_public_key<128, 5, ntt::N, 42>();
-  test_encode_decode_public_key<192, 7, ntt::N, 42>();
-  test_encode_decode_public_key<256, 9, ntt::N, 42>();
+  test_encode_decode_public_key<128, 5, polynomial::N, 42>();
+  test_encode_decode_public_key<192, 7, polynomial::N, 42>();
+  test_encode_decode_public_key<256, 9, polynomial::N, 42>();
 }
 
 template<size_t 𝜅, size_t l, size_t n>
@@ -66,7 +66,7 @@ test_unmasked_secret_key_vector_compression_decompression()
 
 TEST(RaccoonSign, UnmaskedSecretKeyVectorCompressionAndDecompression)
 {
-  test_unmasked_secret_key_vector_compression_decompression<128, 5, ntt::N>();
-  test_unmasked_secret_key_vector_compression_decompression<192, 7, ntt::N>();
-  test_unmasked_secret_key_vector_compression_decompression<256, 9, ntt::N>();
+  test_unmasked_secret_key_vector_compression_decompression<128, 5, polynomial::N>();
+  test_unmasked_secret_key_vector_compression_decompression<192, 7, polynomial::N>();
+  test_unmasked_secret_key_vector_compression_decompression<256, 9, polynomial::N>();
 }
