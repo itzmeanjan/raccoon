@@ -132,6 +132,17 @@ public:
 
   inline constexpr void operator-=(const polynomial_t& rhs) { *this = *this - rhs; }
 
+  // Checks for equality of two polynomials.
+  inline constexpr bool operator==(const polynomial_t& rhs) const
+  {
+    bool res = true;
+    for (size_t i = 0; i < rhs.size(); i++) {
+      res &= (*this)[i] == rhs[i];
+    }
+
+    return res;
+  }
+
   // Applies number theoretic transform using Cooley-Tukey algorithm, producing polynomial f' s.t. its coefficients are placed in bit-reversed order.
   //
   // Note, this routine mutates input i.e. it's an in-place NTT implementation.

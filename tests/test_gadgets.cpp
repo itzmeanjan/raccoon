@@ -1,4 +1,5 @@
 #include "gadgets.hpp"
+#include "polynomial.hpp"
 #include <gtest/gtest.h>
 
 template<size_t d, size_t n>
@@ -6,28 +7,16 @@ static void
 test_refresh_and_decoding_gadgets()
   requires(d > 1)
 {
-  constexpr std::array<field::zq_t, n> zero_poly{};
+  constexpr polynomial::polynomial_t zero_poly{};
 
-  std::array<field::zq_t, n * d> encoded_poly{};
-  std::array<field::zq_t, n> decoded_poly{};
-
-  // Fill destination with some non-zero fixed value, so that we can check
-  // if `decode` routine actually works or not
-  std::fill(decoded_poly.begin(), decoded_poly.end(), 0x0f);
-
+  std::array<polynomial::polynomial_t, d> encoded_poly{};
   mrng::mrng_t<d> mrng;
 
-  gadgets::zero_encoding<d, n>(encoded_poly, mrng);
-  gadgets::decode<d, n>(encoded_poly, decoded_poly);
+  gadgets::zero_encoding<d>(encoded_poly, mrng);
+  EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
 
-  EXPECT_EQ(decoded_poly, zero_poly);
-
-  std::fill(decoded_poly.begin(), decoded_poly.end(), 0xf0);
-
-  gadgets::refresh<d, n>(encoded_poly, mrng);
-  gadgets::decode<d, n>(encoded_poly, decoded_poly);
-
-  EXPECT_EQ(decoded_poly, zero_poly);
+  gadgets::refresh<d>(encoded_poly, mrng);
+  EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
 }
 
 TEST(RaccoonSign, RefreshAndDecodingGadgets)
