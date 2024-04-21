@@ -99,8 +99,10 @@ private:
 public:
   inline constexpr polynomial_t() = default;
 
-  // Access coefficients of degree 511 polynomial.
-  inline constexpr field::zq_t operator[](const size_t idx) const { return this->coeffs[idx]; }
+  // Access coefficients of the polynomial.
+  inline constexpr field::zq_t& operator[](const size_t idx) { return this->coeffs[idx]; }
+  inline constexpr const field::zq_t& operator[](const size_t idx) const { return this->coeffs[idx]; }
+
   inline constexpr size_t size() const { return N; }
 
   // Same as std::memset, but over polynomial coefficients.
