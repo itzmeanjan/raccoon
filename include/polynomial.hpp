@@ -4,6 +4,7 @@
 #include "prng.hpp"
 #include "shake256.hpp"
 #include "utils.hpp"
+#include <algorithm>
 
 namespace polynomial {
 
@@ -98,6 +99,7 @@ private:
 
 public:
   inline constexpr polynomial_t() = default;
+  inline constexpr void copy_from(const polynomial_t& src) { std::copy(src.coeffs.begin(), src.coeffs.end(), this->coeffs.begin()); }
 
   // Access coefficients of the polynomial.
   inline constexpr field::zq_t& operator[](const size_t idx) { return this->coeffs[idx]; }
