@@ -43,32 +43,34 @@ TEST(RaccoonSign, EncodeDecodePublicKey)
   test_encode_decode_public_key<256, 9, 42>();
 }
 
-template<size_t 𝜅, size_t l, size_t n>
+template<size_t 𝜅, size_t l>
 static void
 test_unmasked_secret_key_vector_compression_decompression()
 {
   // Because secret key vector is unmasked
   constexpr size_t d = 1;
 
-  std::array<field::zq_t, l * d * n> exp_s{};
-  std::array<uint8_t, ((d - 1) * 𝜅 + l * n * field::Q_BIT_WIDTH) / 8> s_c{};
-  std::array<field::zq_t, l * d * n> com_s{};
+  std::array<polynomial::polynomial_t, l * d> exp_s{};
+  std::array<uint8_t, ((d - 1) * 𝜅 + l * polynomial::N * field::Q_BIT_WIDTH) / 8> s_c{};
+  std::array<polynomial::polynomial_t, l * d> com_s{};
 
   prng::prng_t prng;
 
   for (size_t i = 0; i < exp_s.size(); i++) {
-    exp_s[i] = field::zq_t::random(prng);
+    for (size_t j = 0; j < exp_s[i].size(); j++) {
+      exp_s[i][j] = field::zq_t::random(prng);
+    }
   }
 
-  serialization::mask_compress<𝜅, l, d, n>(exp_s, s_c, prng);
-  serialization::mask_decompress<𝜅, l, d, n>(s_c, com_s);
+  serialization::mask_compress<𝜅, l, d>(exp_s, s_c, prng);
+  serialization::mask_decompress<𝜅, l, d>(s_c, com_s);
 
   EXPECT_EQ(exp_s, com_s);
 }
 
 TEST(RaccoonSign, UnmaskedSecretKeyVectorCompressionAndDecompression)
 {
-  test_unmasked_secret_key_vector_compression_decompression<128, 5, polynomial::N>();
-  test_unmasked_secret_key_vector_compression_decompression<192, 7, polynomial::N>();
-  test_unmasked_secret_key_vector_compression_decompression<256, 9, polynomial::N>();
+  test_unmasked_secret_key_vector_compression_decompression<128, 5>();
+  test_unmasked_secret_key_vector_compression_decompression<192, 7>();
+  test_unmasked_secret_key_vector_compression_decompression<256, 9>();
 }
