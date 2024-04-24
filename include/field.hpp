@@ -18,6 +18,13 @@ constexpr size_t Q_BIT_WIDTH = std::bit_width(Q);
 // Precomputed Barrett Reduction Constant, see https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L16-L23
 constexpr uint64_t R = ((u128::u128_t::from(1ul) << (2 * Q_BIT_WIDTH)) / u128::u128_t::from(Q)).to<uint64_t>();
 
+// Data type denoting whether `a` is invertible for modulus Q or not.
+enum class is_invertible_t : uint8_t
+{
+  yes = 0xff,
+  no = 0x00,
+};
+
 // Modulo Arithmetic
 struct zq_t
 {
@@ -127,10 +134,10 @@ public:
   inline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
 
   // Multiplicative inverse over field Zq
-  inline constexpr zq_t inv() const
+  inline constexpr std::pair<zq_t, is_invertible_t> inv() const
   {
     if (this->v == 0) {
-      return 0;
+      return { 0, is_invertible_t::no };
     }
 
     int64_t a, b, g;
@@ -138,15 +145,19 @@ public:
     (void)b;
 
     if (g != 1) {
-      return 0;
+      return { 0, is_invertible_t::no };
     }
 
     a += a < 0 ? static_cast<int64_t>(Q) : 0;
     a -= a >= static_cast<int64_t>(Q) ? static_cast<int64_t>(Q) : 0;
 
-    return static_cast<uint64_t>(a);
+    return { static_cast<uint64_t>(a), is_invertible_t::yes };
   }
-  inline constexpr zq_t operator/(const zq_t rhs) const { return *this * rhs.inv(); }
+  inline constexpr std::pair<zq_t, is_invertible_t> operator/(const zq_t rhs) const
+  {
+    const auto rhs_inv = rhs.inv();
+    return { *this * rhs_inv.first, rhs_inv.second };
+  }
 
   // Modulo exponentiation over field Zq
   inline constexpr zq_t operator^(const size_t n) const
