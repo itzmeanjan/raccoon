@@ -5,6 +5,7 @@
 #include "shake256.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <cstdint>
 
 namespace polynomial {
 
@@ -150,6 +151,17 @@ public:
     }
 
     return res;
+  }
+
+  // Rounding shift right of each coefficient of the polynomial, following `Programming note` section on top of page 12 of Raccoon specification.
+  template<size_t 𝜈t>
+  inline constexpr void rounding_shr()
+  {
+    constexpr uint64_t rounding = 1ul << (𝜈t - 1);
+
+    for (size_t i = 0; i < this->size(); i++) {
+      this->coeffs[i] = (this->coeffs[i].raw() + rounding) >> 𝜈t;
+    }
   }
 
   // Applies number theoretic transform using Cooley-Tukey algorithm, producing polynomial f' s.t. its coefficients are placed in bit-reversed order.
