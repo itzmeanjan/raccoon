@@ -10,23 +10,13 @@ test_refresh_and_decoding_gadgets()
   constexpr polynomial::polynomial_t zero_poly{};
   std::array<polynomial::polynomial_t, d> encoded_poly{};
 
-  // Unmasked case
-  if constexpr (d == 1) {
-    gadgets::zero_encoding<d>(encoded_poly);
-    EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
+  mrng::mrng_t<d> mrng;
 
-    gadgets::refresh<d>(encoded_poly);
-    EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
-  } else {
-    // Masked cases, requiring a MRNG
-    mrng::mrng_t<d> mrng;
+  gadgets::zero_encoding<d>(encoded_poly, mrng);
+  EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
 
-    gadgets::zero_encoding<d>(encoded_poly, mrng);
-    EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
-
-    gadgets::refresh<d>(encoded_poly, mrng);
-    EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
-  }
+  gadgets::refresh<d>(encoded_poly, mrng);
+  EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
 }
 
 TEST(RaccoonSign, RefreshAndDecodingGadgets)
