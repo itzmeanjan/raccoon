@@ -2,41 +2,36 @@
 #include "field.hpp"
 #include "gadgets.hpp"
 #include "mrng.hpp"
+#include "polynomial.hpp"
 #include "prng.hpp"
 #include "shake256.hpp"
 #include "subtle.hpp"
 #include "utils.hpp"
-#include <array>
-#include <cstdint>
-#include <span>
 
 namespace sampling {
 
 // Given `𝜅` -bits seed as input, this routine is used for generating public matrix A, following algorithm 6 of
 // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
-template<size_t k, size_t l, size_t n, size_t 𝜅>
-static inline void
-expandA(std::span<const uint8_t, 𝜅 / 8> seed, std::span<field::zq_t, k * l * n> A)
+template<size_t k, size_t l, size_t 𝜅>
+static inline constexpr void
+expandA(std::span<const uint8_t, 𝜅 / 8> seed, std::span<polynomial::polynomial_t, k * l> A)
 {
   for (size_t i = 0; i < k; i++) {
     for (size_t j = 0; j < l; j++) {
-
       uint64_t hdr = 0;
       hdr |= (static_cast<uint64_t>(j) << 16) | (static_cast<uint64_t>(i) << 8) | (static_cast<uint64_t>('A') << 0);
 
-      const size_t poly_off = (i * l + j) * n;
-      auto poly = std::span<field::zq_t, n>(A.subspan(poly_off, n));
-
-      sampleQ<n, 𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(hdr), sizeof(hdr)), seed, poly);
+      const size_t poly_idx = i * l + j;
+      A[poly_idx].template sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(hdr), sizeof(hdr)), seed);
     }
   }
 }
 
-// Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for uniform sampling a degree `n` polynomial s.t. each of its
+// Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for uniform sampling a polynomial s.t. each of its
 // coefficients ∈ [-2^(u-1), 2^(u-1)), following algorithm 7 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
-template<size_t n, size_t u, size_t 𝜅>
-static inline void
-sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎, std::span<int64_t, n> f)
+template<size_t u, size_t 𝜅>
+static inline constexpr void
+sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎, std::span<int64_t, polynomial::N> f)
   requires(u > 0)
 {
   shake256::shake256_t xof;
@@ -50,7 +45,7 @@ sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎
   constexpr size_t squeezable_bytes = (u + 7) / 8;
   std::array<uint8_t, squeezable_bytes> b{};
 
-  for (size_t i = 0; i < n; i++) {
+  for (size_t i = 0; i < f.size(); i++) {
     xof.squeeze(b);
 
     const uint64_t b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
@@ -66,28 +61,28 @@ sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎
 // implementing Sum of Uniforms (SU) distribution in masked domain, following algorithm 8 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
 //
 // Each time noise is added polynomials are refreshed and this operation is repeated `rep` -many times.
-template<size_t row_cnt, size_t d, size_t n, size_t u, size_t rep, size_t 𝜅>
-static inline void
-add_rep_noise(std::span<field::zq_t, row_cnt * n * d> vec, prng::prng_t& prng, mrng::mrng_t<d>& mrng)
+template<size_t row_cnt, size_t d, size_t u, size_t rep, size_t 𝜅>
+static inline constexpr void
+add_rep_noise(std::span<polynomial::polynomial_t, row_cnt * d> vec, prng::prng_t& prng, mrng::mrng_t<d>& mrng)
 {
   std::array<uint8_t, 𝜅 / 8> 𝜎{};
-  std::array<int64_t, n> poly_u{};
+  std::array<int64_t, polynomial::N> poly_u{};
 
   for (size_t i = 0; i < row_cnt; i++) {
-    const size_t row_begin = i * (n * d);
+    const size_t row_begin = i * d;
 
     for (size_t i_rep = 0; i_rep < rep; i_rep++) {
       for (size_t j = 0; j < d; j++) {
-        const size_t share_begin = row_begin + (j * n);
+        const size_t share_begin = row_begin + j;
 
         prng.read(𝜎);
 
         uint64_t hdr_u = 0;
         hdr_u |= (static_cast<uint64_t>(j) << 24) | (static_cast<uint64_t>(i) << 16) | (static_cast<uint64_t>(i_rep) << 8) | (static_cast<uint64_t>('u') << 0);
 
-        sampleU<n, u, 𝜅>(std::span<const uint8_t, sizeof(hdr_u)>(reinterpret_cast<uint8_t*>(&hdr_u), sizeof(hdr_u)), 𝜎, poly_u);
+        sampleU<u, 𝜅>(std::span<const uint8_t, sizeof(hdr_u)>(reinterpret_cast<uint8_t*>(&hdr_u), sizeof(hdr_u)), 𝜎, poly_u);
 
-        for (size_t k = 0; k < n; k++) {
+        for (size_t k = 0; k < poly_u.size(); k++) {
           const auto coeff = static_cast<int64_t>(vec[share_begin + k].raw()) + poly_u[k];
 
           const auto is_lt_zero = -(static_cast<uint64_t>(coeff) >> ((sizeof(coeff) * 8) - 1));
@@ -99,7 +94,7 @@ add_rep_noise(std::span<field::zq_t, row_cnt * n * d> vec, prng::prng_t& prng, m
         }
       }
 
-      gadgets::refresh<d, n>(std::span<field::zq_t, n * d>(vec.subspan(row_begin, n * d)), mrng);
+      gadgets::refresh<d>(std::span<field::zq_t, d>(vec.subspan(row_begin, d)), mrng);
     }
   }
 }
