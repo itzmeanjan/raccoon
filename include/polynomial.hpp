@@ -10,7 +10,7 @@ namespace polynomial {
 
 // N is set to 512 for all parameter sets of Raccoon.
 constexpr size_t LOG2N = 9;
-constexpr size_t N = 512;
+constexpr size_t N = 1ul << LOG2N;
 
 // First primitive 1024 (=2*N) -th root of unity modulo q | q = 549824583172097
 //
@@ -18,7 +18,12 @@ constexpr size_t N = 512;
 constexpr field::zq_t ζ(358453792785495ul);
 
 // Multiplicative inverse of N over Z_q | q = 549824583172097
-constexpr auto INV_N = field::zq_t(N).inv();
+constexpr auto INV_N = []() {
+  constexpr auto inv_n = field::zq_t(N).inv();
+  static_assert(inv_n.second == field::is_invertible_t::yes, "N is not invertible for modulus Q");
+
+  return inv_n.first;
+}();
 
 // Given a 64 -bit unsigned integer, this routine extracts specified many contiguous bits from LSB ( least significant bits ) side & reverses their bit order,
 // returning bit reversed `mbw` -bit wide number.
