@@ -25,16 +25,16 @@ TEST(RaccoonSign, ArithmeticOverZq)
     const auto g = f / b;
     const auto h = f / a;
 
-    if (b != field::zq_t::zero()) {
-      EXPECT_EQ(g, a);
+    if ((b != field::zq_t::zero()) && (g.second == field::is_invertible_t::yes)) {
+      EXPECT_EQ(g.first, a);
     } else {
-      EXPECT_EQ(g, field::zq_t::zero());
+      EXPECT_EQ(g.first, field::zq_t::zero());
     }
 
-    if (a != field::zq_t::zero()) {
-      EXPECT_EQ(h, b);
+    if ((a != field::zq_t::zero()) && (h.second == field::is_invertible_t::yes)) {
+      EXPECT_EQ(h.first, b);
     } else {
-      EXPECT_EQ(h, field::zq_t::zero());
+      EXPECT_EQ(h.first, field::zq_t::zero());
     }
 
     // Exponentiation
