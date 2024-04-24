@@ -153,6 +153,17 @@ public:
     return res;
   }
 
+  // Multiplies two polynomials such that both input and output are in their number theoretic representation.
+  inline constexpr polynomial_t operator*(const polynomial_t& rhs) const
+  {
+    polynomial_t res{};
+    for (size_t i = 0; i < res.size(); i++) {
+      res[i] = (*this)[i] * rhs[i];
+    }
+
+    return res;
+  }
+
   // Rounding shift right of each coefficient of the polynomial, following `Programming note` section on top of page 12 of Raccoon specification.
   template<size_t 𝜈t>
   inline constexpr void rounding_shr()
