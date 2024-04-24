@@ -22,7 +22,7 @@ expandA(std::span<const uint8_t, 𝜅 / 8> seed, std::span<polynomial::polynomia
       hdr |= (static_cast<uint64_t>(j) << 16) | (static_cast<uint64_t>(i) << 8) | (static_cast<uint64_t>('A') << 0);
 
       const size_t poly_idx = i * l + j;
-      A[poly_idx].template sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(hdr), sizeof(hdr)), seed);
+      A[poly_idx].template sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)), seed);
     }
   }
 }
@@ -83,18 +83,18 @@ add_rep_noise(std::span<polynomial::polynomial_t, row_cnt * d> vec, prng::prng_t
         sampleU<u, 𝜅>(std::span<const uint8_t, sizeof(hdr_u)>(reinterpret_cast<uint8_t*>(&hdr_u), sizeof(hdr_u)), 𝜎, poly_u);
 
         for (size_t k = 0; k < poly_u.size(); k++) {
-          const auto coeff = static_cast<int64_t>(vec[share_begin + k].raw()) + poly_u[k];
+          const auto coeff = static_cast<int64_t>(vec[share_begin][k].raw()) + poly_u[k];
 
           const auto is_lt_zero = -(static_cast<uint64_t>(coeff) >> ((sizeof(coeff) * 8) - 1));
           const auto is_ge_q = subtle::ct_ge<uint64_t, uint64_t>(static_cast<uint64_t>(coeff & ~is_lt_zero), field::Q);
 
           const auto normalized_coeff = static_cast<uint64_t>(static_cast<int64_t>(field::Q & is_lt_zero) + coeff - static_cast<int64_t>(field::Q & is_ge_q));
 
-          vec[share_begin + k] = field::zq_t(normalized_coeff);
+          vec[share_begin][k] = field::zq_t(normalized_coeff);
         }
       }
 
-      gadgets::refresh<d>(std::span<field::zq_t, d>(vec.subspan(row_begin, d)), mrng);
+      gadgets::refresh<d>(std::span<polynomial::polynomial_t, d>(vec.subspan(row_begin, d)), mrng);
     }
   }
 }
