@@ -240,6 +240,7 @@ public:
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
   template<size_t d>
   inline constexpr void sample_polynomial(const size_t idx, mrng::mrng_t<d>& mrng)
+    requires(d > 1)
   {
     if (idx >= (d - 1)) {
       this->fill_with(0);
