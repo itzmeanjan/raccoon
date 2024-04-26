@@ -2,9 +2,7 @@
 #include "ascon/aead/ascon80pq.hpp"
 #include "ascon/ascon_perm.hpp"
 #include "ascon/utils.hpp"
-#include "field.hpp"
 #include "utils.hpp"
-#include <algorithm>
 #include <array>
 #include <numeric>
 

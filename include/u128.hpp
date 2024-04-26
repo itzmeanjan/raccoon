@@ -1,11 +1,14 @@
 #pragma once
-#include "u64.hpp"
-#include <array>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <type_traits>
+#include <utility>
+
+#ifndef __SIZEOF_INT128__
+#include "u64.hpp"
+#include <limits>
+#endif
 
 namespace u128 {
 

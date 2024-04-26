@@ -1,5 +1,4 @@
 #pragma once
-#include "field.hpp"
 #include "gadgets.hpp"
 #include "mrng.hpp"
 #include "polynomial.hpp"
