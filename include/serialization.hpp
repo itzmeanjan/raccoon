@@ -3,7 +3,10 @@
 #include "polynomial.hpp"
 #include "prng.hpp"
 #include "utils.hpp"
+#include <algorithm>
+#include <cstdint>
 #include <limits>
+#include <span>
 
 namespace serialization {
 
@@ -197,6 +200,145 @@ mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * polynomial::N * f
                                                std::span<const uint8_t, 𝜅 / 8>(s_c.subspan(s_c_off, 𝜅 / 8)));
     }
   }
+}
+
+// Byte encodes a signature sig = (c_hash, h, z), following section 2.5.1 of the Raccoon specification.
+//
+// In case signature can *not* be encoded into fixed byte length `sig_len`, it returns false, otherwise
+// (i.e. in case of successful signature encoding ) it returns true.
+template<size_t k, size_t l, size_t 𝜅, size_t sig_len>
+static inline constexpr bool
+encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
+           std::span<const int64_t, k * polynomial::N> h,
+           std::span<const int64_t, l * polynomial::N> z,
+           std::span<uint8_t, sig_len> sig)
+{
+  bool encodable = true;
+  size_t sig_off = 0;
+
+  std::copy(c_hash.begin(), c_hash.end(), sig.begin());
+  sig_off += c_hash.size();
+
+  uint64_t buffer = 0;
+  size_t buf_bit_off = 0;
+
+  for (size_t row_idx = 0; row_idx < k; row_idx++) {
+    const size_t offset = row_idx * polynomial::N;
+
+    for (size_t coeff_idx = 0; coeff_idx < polynomial::N; coeff_idx++) {
+      if (buf_bit_off >= std::numeric_limits<uint8_t>::digits) {
+        const size_t writeable_bitcnt = buf_bit_off & (-8ul);
+        const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
+
+        if ((sig_off + writeable_bytecnt) > sig_len) {
+          encodable = false;
+          break;
+        }
+
+        raccoon_utils::to_le_bytes(buffer, sig.subspan(sig_off, writeable_bytecnt));
+
+        sig_off += writeable_bytecnt;
+        buf_bit_off -= writeable_bitcnt;
+        buffer >>= writeable_bitcnt;
+      }
+
+      const auto x = h[offset + coeff_idx];
+      const auto abs_x = static_cast<size_t>(std::abs(x));
+
+      const uint64_t ones = (1ul << abs_x) - 1;
+
+      if (x > 0) {
+        buffer |= (((0b00ul << abs_x) | ones) << buf_bit_off);
+        buf_bit_off += (abs_x + 2);
+      } else if (x < 0) {
+        buffer |= (((0b10ul << abs_x) | ones) << buf_bit_off);
+        buf_bit_off += (abs_x + 2);
+      } else {
+        buffer |= (0b0ul << buf_bit_off);
+        buf_bit_off += 1;
+      }
+    }
+
+    if (!encodable) {
+      break;
+    }
+  }
+
+  if (!encodable) {
+    return encodable;
+  }
+
+  for (size_t row_idx = 0; row_idx < l; row_idx++) {
+    const size_t offset = row_idx * polynomial::N;
+
+    for (size_t coeff_idx = 0; coeff_idx < polynomial::N; coeff_idx++) {
+      if (buf_bit_off >= std::numeric_limits<uint8_t>::digits) {
+        const size_t writeable_bitcnt = buf_bit_off & (-8ul);
+        const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
+
+        if ((sig_off + writeable_bytecnt) > sig_len) {
+          encodable = false;
+          break;
+        }
+
+        raccoon_utils::to_le_bytes(buffer, sig.subspan(sig_off, writeable_bytecnt));
+
+        sig_off += writeable_bytecnt;
+        buf_bit_off -= writeable_bitcnt;
+        buffer >>= writeable_bitcnt;
+      }
+
+      const auto x = z[offset + coeff_idx];
+      const auto abs_x = std::abs(x);
+
+      const auto a = abs_x & ((1l << 40) - 1);
+      const auto b = abs_x >> 40;
+      const auto abs_b = static_cast<size_t>(std::abs(b));
+
+      buffer |= (static_cast<uint64_t>(a) << buf_bit_off);
+      buf_bit_off += 40;
+
+      const uint64_t ones = (1ul << abs_b) - 1;
+
+      if (x > 0) {
+        buffer |= (((0b00ul << abs_b) | ones) << buf_bit_off);
+        buf_bit_off += (abs_b + 2);
+      } else if (x < 0) {
+        buffer |= (((0b10ul << abs_b) | ones) << buf_bit_off);
+        buf_bit_off += (abs_b + 2);
+      } else {
+        buffer |= (0b0ul << buf_bit_off);
+        buf_bit_off += 1;
+      }
+    }
+
+    if (!encodable) {
+      break;
+    }
+  }
+
+  if (!encodable) {
+    return encodable;
+  }
+
+  if (buf_bit_off > 0) {
+    const size_t writeable_bitcnt = (buf_bit_off + 7) & (-8ul);
+    const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
+
+    if ((sig_off + writeable_bytecnt) > sig_len) {
+      encodable = false;
+      return encodable;
+    }
+
+    raccoon_utils::to_le_bytes(buffer, sig.subspan(sig_off, writeable_bytecnt));
+
+    sig_off += writeable_bytecnt;
+    buf_bit_off -= writeable_bitcnt;
+    buffer >>= writeable_bitcnt;
+  }
+
+  std::fill_n(sig.subspan(sig_off), sig_len - sig_off, 0x00);
+  return encodable;
 }
 
 }
