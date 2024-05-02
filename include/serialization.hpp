@@ -338,7 +338,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
     buffer >>= writeable_bitcnt;
   }
 
-  std::fill_n(sig.subspan(sig_off), sig_len - sig_off, 0x00);
+  std::fill_n(sig.subspan(sig_off).begin(), sig_len - sig_off, 0x00);
   return encodable;
 }
 
