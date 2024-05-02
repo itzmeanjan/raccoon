@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <limits>
 #include <span>
+#include <tuple>
 
 namespace serialization {
 
@@ -339,6 +340,168 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
 
   std::fill_n(sig.subspan(sig_off), sig_len - sig_off, 0x00);
   return encodable;
+}
+
+// Extracts n -th bit from 64 -bit word s.t. n < 64.
+static inline constexpr uint64_t
+get_bit_at(const uint64_t word, const size_t idx)
+{
+  return (word >> idx) & 0b1ul;
+}
+
+// Given a 64 -bit buffer s.t. `buf_bit_off` bits, from LSB side, are part of current active buffer, this routine tries to decode a small signed integer
+// from those bits, while also returning how many bits were consumed during decoding.
+static inline constexpr std::pair<int64_t, size_t>
+decode_bits_as_coeff(const uint64_t buffer, const size_t buf_bit_off)
+{
+  int64_t res = 0;
+  size_t bit_idx = 0;
+
+  while ((bit_idx < buf_bit_off) && get_bit_at(buffer, bit_idx) == 1) {
+    res++;
+    bit_idx++;
+  }
+
+  // exhaused all available bits
+  if (bit_idx == buf_bit_off) {
+    return { 0, 0 };
+  }
+
+  // skip the stop bit
+  bit_idx++;
+
+  // figure out the sign bit
+  if (res > 0) {
+    if (get_bit_at(buffer, bit_idx) == 1) {
+      res = -res;
+    }
+    bit_idx++;
+  }
+
+  return { res, bit_idx };
+}
+
+// Decodes a byte encoded signature as (c_hash, h, z), following section 2.5.1 of the Raccoon specification.
+//
+// In case signature decoding fails, it returns false, else it returns true.
+template<size_t k, size_t l, size_t 𝜅, size_t sig_len>
+static inline constexpr bool
+decode_sig(std::span<const uint8_t, sig_len> sig,
+           std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
+           std::span<int64_t, k * polynomial::N> h,
+           std::span<int64_t, l * polynomial::N> z)
+{
+  bool decodable = true;
+  size_t sig_off = 0;
+
+  std::copy_n(sig.begin(), c_hash.size(), c_hash.begin());
+  sig_off += c_hash.size();
+
+  uint64_t buffer = 0;
+  size_t buf_bit_off = 0;
+
+  size_t h_coeff_idx = 0;
+  while ((sig_off < sig_len) && (h_coeff_idx < h.size())) {
+    const size_t bufferable_num_bits = std::numeric_limits<uint64_t>::digits - buf_bit_off;
+    const size_t readable_num_bits = bufferable_num_bits & (-8ul);
+    const size_t readable_num_bytes = readable_num_bits / std::numeric_limits<uint8_t>::digits;
+    const size_t to_be_buffered_num_bytes = std::min(readable_num_bytes, sig_len - sig_off);
+
+    const auto word = raccoon_utils::from_le_bytes<uint64_t>(sig.subspan(sig_off, to_be_buffered_num_bytes));
+    buffer |= (word << buf_bit_off);
+    buf_bit_off += (to_be_buffered_num_bytes * std::numeric_limits<uint8_t>::digits);
+
+    int64_t coeff = 0;
+    size_t bits_consumed = 0;
+    std::tie(coeff, bits_consumed) = decode_bits_as_coeff(buffer, buf_bit_off);
+
+    if (bits_consumed > 0) [[likely]] {
+      h[h_coeff_idx] = coeff;
+      h_coeff_idx++;
+
+      buf_bit_off -= bits_consumed;
+      buffer >>= bits_consumed;
+    } else {
+      decodable = false;
+      break;
+    }
+
+    sig_off += to_be_buffered_num_bytes;
+  }
+
+  if (!decodable) {
+    return decodable;
+  }
+
+  if ((sig_off == sig_len) || (h_coeff_idx != h.size())) {
+    decodable = false;
+    return decodable;
+  }
+
+  size_t z_coeff_idx = 0;
+  while ((sig_off < sig_len) && (z_coeff_idx < z.size())) {
+    const size_t bufferable_num_bits = std::numeric_limits<uint64_t>::digits - buf_bit_off;
+    const size_t readable_num_bits = bufferable_num_bits & (-8ul);
+    const size_t readable_num_bytes = readable_num_bits / std::numeric_limits<uint8_t>::digits;
+    const size_t to_be_buffered_num_bytes = std::min(readable_num_bytes, sig_len - sig_off);
+
+    const auto word = raccoon_utils::from_le_bytes<uint64_t>(sig.subspan(sig_off, to_be_buffered_num_bytes));
+    buffer |= (word << buf_bit_off);
+    buf_bit_off += (to_be_buffered_num_bytes * std::numeric_limits<uint8_t>::digits);
+
+    if (buf_bit_off > 40) [[likely]] {
+      constexpr int64_t mask40 = (1l << 40) - 1;
+      const int64_t a = buffer & mask40;
+
+      buffer >>= 40;
+      buf_bit_off -= 40;
+
+      int64_t b = 0;
+      size_t bits_consumed = 0;
+      std::tie(b, bits_consumed) = decode_bits_as_coeff(buffer, buf_bit_off);
+
+      if (bits_consumed > 0) [[likely]] {
+        z[z_coeff_idx] = (b << 40) | a;
+        z_coeff_idx++;
+
+        buf_bit_off -= bits_consumed;
+        buffer >>= bits_consumed;
+      } else {
+        decodable = false;
+        break;
+      }
+    }
+
+    sig_off += to_be_buffered_num_bytes;
+  }
+
+  if (!decodable) {
+    return decodable;
+  }
+
+  if (z_coeff_idx != z.size()) {
+    decodable = false;
+    return decodable;
+  }
+
+  if (buf_bit_off > 0) {
+    const uint64_t mask = (1ul << buf_bit_off) - 1;
+    decodable = ((buffer & mask) == 0);
+
+    buffer >>= buf_bit_off;
+    buf_bit_off = 0;
+  }
+
+  if (!decodable) {
+    return decodable;
+  }
+
+  auto remaining_sig = sig.subspan(sig_off, sig_len - sig_off);
+  for (auto byte : remaining_sig) {
+    decodable &= (byte == 0);
+  }
+
+  return decodable;
 }
 
 }
