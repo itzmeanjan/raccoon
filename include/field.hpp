@@ -133,6 +133,10 @@ public:
   inline constexpr zq_t operator*(const zq_t rhs) const { return barrett_reduce(u128::u128_t::from(this->v) * u128::u128_t::from(rhs.v)); }
   inline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
 
+  // Shift operand leftwards by `offset` many bits s.t. returned value ∈ Zq.
+  // Ensure that `offset < 64`.
+  inline constexpr zq_t operator<<(const size_t offset) const { return barrett_reduce(u128::u128_t::from(this->v << offset)); }
+
   // Multiplicative inverse over field Zq
   inline constexpr std::pair<zq_t, is_invertible_t> inv() const
   {
