@@ -175,6 +175,17 @@ public:
     }
   }
 
+  // Shift each coefficient of polynomial leftwards by `offset` (<64) many bits s.t. resulting coefficients ∈ Zq.
+  inline constexpr polynomial_t operator<<(const size_t offset) const
+  {
+    polynomial_t res{};
+    for (size_t i = 0; i < res.size(); i++) {
+      res[i] = (*this)[i] << offset;
+    }
+
+    return res;
+  }
+
   // Applies number theoretic transform using Cooley-Tukey algorithm, producing polynomial f' s.t. its coefficients are placed in bit-reversed order.
   //
   // Note, this routine mutates input i.e. it's an in-place NTT implementation.
