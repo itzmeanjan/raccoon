@@ -40,7 +40,7 @@ chal_hash(std::span<const polynomial::polynomial_t, k> w,
       xof.absorb(_buffer);
     }
 
-    _buffer[buf_off] = w[coeff_idx / polynomial::N][coeff_idx % polynomial::N];
+    _buffer[buf_off] = w[coeff_idx / polynomial::N][coeff_idx % polynomial::N].raw();
 
     buf_off++;
     coeff_idx++;
