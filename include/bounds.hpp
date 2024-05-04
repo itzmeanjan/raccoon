@@ -9,7 +9,7 @@ namespace checks {
 //
 // Though note, it doesn't implement step 1, 2 of algorithm 4, following implementation begins from step 3.
 // Following implementation collects some inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/racc_core.py#L257-L299
-template<size_t k, size_t l, size_t 𝜈w, uint64_t 𝐵_∞, uint64_t 𝐵22>
+template<size_t k, size_t l, size_t 𝜈w, uint64_t Binf, uint64_t B22>
 static inline constexpr bool
 check_bounds(std::span<const int64_t, k * polynomial::N> h, std::span<const polynomial::polynomial_t, l> z)
 {
@@ -45,15 +45,15 @@ check_bounds(std::span<const int64_t, k * polynomial::N> h, std::span<const poly
     }
   }
 
-  if (h_inf_norm > (𝐵_∞ >> 𝜈w)) {
+  if (h_inf_norm > (Binf >> 𝜈w)) {
     return false;
   }
-  if (z_inf_norm > field::zq_t(𝐵_∞)) {
+  if (z_inf_norm > field::zq_t(Binf)) {
     return false;
   }
 
   const auto scaled_h_sqr_norm = h_sqr_norm * (1ul << ((2 * 𝜈w) - 64));
-  if ((field::zq_t(scaled_h_sqr_norm) + z_sqr_norm) > field::zq_t(𝐵22)) {
+  if ((field::zq_t(scaled_h_sqr_norm) + z_sqr_norm) > field::zq_t(B22)) {
     return false;
   }
 

@@ -90,7 +90,7 @@ keygen(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> see
 // Given one (un)masked Raccoon secret key, this routine can be used for signing a message, following algorithm 2 of the specification.
 //
 // When `d = 1`, it's the unmasked case, while for `d > 1`, signing process is masked.
-template<size_t 𝜅, size_t k, size_t l, size_t d, size_t 𝑢w, size_t 𝜈w, size_t 𝜈t, size_t rep, size_t 𝜔, size_t sig_len, uint64_t 𝐵_∞, uint64_t 𝐵22>
+template<size_t 𝜅, size_t k, size_t l, size_t d, size_t 𝑢w, size_t 𝜈w, size_t 𝜈t, size_t rep, size_t 𝜔, size_t sig_len, uint64_t Binf, uint64_t B22>
 static inline constexpr void
 sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, polynomial::N, 𝜈t>()> skey,
      std::span<const uint8_t> msg,
@@ -255,7 +255,7 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
       continue;
     }
 
-    const auto is_under_bounds = checks::check_bounds<k, l, 𝜈w, 𝐵_∞, 𝐵22>(_centered_h, _collapsed_z);
+    const auto is_under_bounds = checks::check_bounds<k, l, 𝜈w, Binf, B22>(_centered_h, _collapsed_z);
     if (!is_under_bounds) {
       continue;
     }
