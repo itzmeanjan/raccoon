@@ -38,6 +38,7 @@ chal_hash(std::span<const polynomial::polynomial_t, k> w,
   while (coeff_idx < coeff_cnt) {
     if (buf_off == _buffer.size()) {
       xof.absorb(_buffer);
+      buf_off = 0;
     }
 
     _buffer[buf_off] = static_cast<uint8_t>(w[coeff_idx / polynomial::N][coeff_idx % polynomial::N].raw());
