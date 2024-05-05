@@ -3,6 +3,7 @@
 #include "mrng.hpp"
 #include "prng.hpp"
 #include "shake256.hpp"
+#include "subtle.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <array>
@@ -217,18 +218,20 @@ public:
     return res;
   }
 
-  // Centers the coefficients of a polynomial around 0 i.e. coeffiecients now ∈ [-q/2, q/2)
+  // Centers the coefficients of a polynomial around 0, given that they ∈ [0, q] and resulting polynomial coeffiecients will be signed s.t. ∈ [-q/2, q/2).
   // Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/polyr.py#L215-L218
+  template<uint64_t q>
   inline constexpr std::array<int64_t, N> center() const
   {
+    constexpr auto qby2 = q / 2;
+
     std::array<int64_t, N> centered_poly{};
-
-    constexpr auto qby2 = field::Q / 2;
-    constexpr auto qby2_zq = field::zq_t(qby2);
-
     for (size_t i = 0; i < centered_poly.size(); i++) {
-      const auto res = (*this)[i] + qby2_zq;
-      centered_poly[i] = static_cast<int64_t>(res.raw()) - static_cast<int64_t>(qby2);
+      const auto x = this->coeffs[i].raw();
+
+      const auto is_ge = subtle::ct_ge<uint64_t, uint64_t>(x + qby2, q);
+      const auto centered_x = static_cast<int64_t>(x) - static_cast<int64_t>(is_ge & q);
+      centered_poly[i] = centered_x;
     }
 
     return centered_poly;
