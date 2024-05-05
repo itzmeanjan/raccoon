@@ -108,12 +108,14 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
   auto pkey = skey.template subspan<skey_off0, skey_off1 - skey_off0>();
   auto s_c = skey.template subspan<skey_off1, skey_off2 - skey_off1>();
 
+  // Step 1: Decode secret key and public key into its components
   serialization::decode_public_key<𝜅, k, 𝜈t>(pkey, seed, t);
   serialization::mask_decompress<𝜅, l, d>(s_c, _s);
 
   std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> 𝜇{};
   auto _𝜇 = std::span(𝜇);
 
+  // Step 2: Bind public key with message
   shake256::shake256_t hasher{};
   hasher.absorb(pkey);
   hasher.finalize();
@@ -125,6 +127,7 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
   hasher.finalize();
   hasher.squeeze(_𝜇);
 
+  // Step 3: Generate matrix A
   std::array<polynomial::polynomial_t, k * l> A{};
   sampling::expandA<k, l, 𝜅>(seed, A);
 
@@ -135,13 +138,16 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     prng::prng_t prng{};
     mrng::mrng_t<d> mrng{};
 
+    // Step 4: Generate masked zero vector [[r]]
     for (size_t i = 0; i < l; i++) {
       const size_t s_off = i * d;
       gadgets::zero_encoding<d>(std::span<polynomial::polynomial_t, d>(_r.subspan(s_off, d)), mrng);
     }
 
+    // Step 5: Add masked noise to [[r]]
     sampling::add_rep_noise<l, d, 𝑢w, rep, 𝜅>(_r, prng, mrng);
 
+    // Convert [[r]] into NTT representation
     for (size_t i = 0; i < _r.size(); i++) {
       _r[i].ntt();
     }
@@ -149,6 +155,7 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     std::array<polynomial::polynomial_t, k * d> w{};
     auto _w = std::span(w);
 
+    // Step 6: Compute matrix vector multiplication, producing masked vector [[w]]
     for (size_t row_idx = 0; row_idx < k; row_idx++) {
       for (size_t col_idx = 0; col_idx < l; col_idx++) {
         for (size_t shr_idx = 0; shr_idx < d; shr_idx++) {
@@ -161,11 +168,14 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
       }
     }
 
+    // Step 7: Add masked noise to vector [[w]]
     sampling::add_rep_noise<k, d, 𝑢w, rep, 𝜅>(_w, prng, mrng);
 
     std::array<polynomial::polynomial_t, k> collapsed_w{};
     auto _collapsed_w = std::span(collapsed_w);
 
+    // Step 8: Collapse [[w]] into unmasked format
+    // Step 9: Rouding and right shifting of unmasked vector w, modulo `q >> 𝜈w`
     for (size_t row_idx = 0; row_idx < _collapsed_w.size(); row_idx++) {
       _collapsed_w[row_idx] = gadgets::decode<d>(std::span<polynomial::polynomial_t, d>(_w.subspan(row_idx * d, d)));
       _collapsed_w[row_idx].template rounding_shr<𝜈w>();
@@ -173,10 +183,15 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
 
     std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash{};
 
+    // Step 10: Compute challenge hash
     challenge::chal_hash<k, 𝜅>(_collapsed_w, 𝜇, c_hash);
+
+    // Step 11: Compute challenge polynomial
     auto c_poly = challenge::chal_poly<𝜅, 𝜔>(c_hash);
     c_poly.ntt();
 
+    // Step 12: Refresh masked secret key vector [[s]]
+    // Step 13: Refresh masked vector [[r]]
     for (size_t row_idx = 0; row_idx < l; row_idx++) {
       gadgets::refresh<d>(std::span<polynomial::polynomial_t, d>(_s.subspan(row_idx * d, d)), mrng);
       gadgets::refresh<d>(std::span<polynomial::polynomial_t, d>(_r.subspan(row_idx * d, d)), mrng);
@@ -185,10 +200,12 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     std::array<polynomial::polynomial_t, _r.size()> z{};
     auto _z = std::span(z);
 
+    // Step 14: Compute masked response vector [[z]]
     for (size_t i = 0; i < _z.size(); i++) {
       _z[i] = c_poly * _s[i] + _r[i];
     }
 
+    // Step 15: Refresh masked response vector [[z]], before collapsing it
     for (size_t row_idx = 0; row_idx < l; row_idx++) {
       gadgets::refresh<d>(std::span<polynomial::polynomial_t, d>(_z.subspan(row_idx * d, d)), mrng);
     }
@@ -196,17 +213,15 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     std::array<polynomial::polynomial_t, l> collapsed_z{};
     auto _collapsed_z = std::span(collapsed_z);
 
+    // Step 16: Collapse [[z]] into unmasked format
     for (size_t row_idx = 0; row_idx < _collapsed_z.size(); row_idx++) {
       _collapsed_z[row_idx] = gadgets::decode<d>(std::span<polynomial::polynomial_t, d>(_z.subspan(row_idx * d, d)));
     }
 
-    c_poly.intt();
-    auto shl_c_poly = c_poly << 𝜈t;
-    shl_c_poly.ntt();
-
     std::array<polynomial::polynomial_t, _collapsed_w.size()> y{};
     auto _y = std::span(y);
 
+    // Step 17: Compute noisy LWE commitment vector y
     for (size_t row_idx = 0; row_idx < k; row_idx++) {
       for (size_t col_idx = 0; col_idx < l; col_idx++) {
         _y[row_idx] += A[row_idx * l + col_idx] * _collapsed_z[col_idx];
@@ -214,52 +229,65 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     }
 
     for (size_t row_idx = 0; row_idx < t.size(); row_idx++) {
+      t[row_idx] = t[row_idx] << 𝜈t;
       t[row_idx].ntt();
 
-      _y[row_idx] -= shl_c_poly * t[row_idx];
+      _y[row_idx] -= c_poly * t[row_idx];
       _y[row_idx].intt();
+
+      // (partial) Step 18: Rouding and right shifting of LWE commitment vector y, modulo `q >> 𝜈w`
       _y[row_idx].template rounding_shr<𝜈w>();
     }
+
+    constexpr uint64_t q_𝜈w = field::Q >> 𝜈w;
 
     std::array<polynomial::polynomial_t, _y.size()> h{};
     auto _h = std::span(h);
 
+    // (partial) Step 18: Computes hint vector h, modulo `q >> 𝜈w`
     for (size_t row_idx = 0; row_idx < _h.size(); row_idx++) {
-      _h[row_idx] = _collapsed_w[row_idx] - _y[row_idx];
+      _h[row_idx] = _collapsed_w[row_idx].template sub_mod<q_𝜈w>(_y[row_idx]);
     }
 
     std::array<int64_t, _h.size() * polynomial::N> centered_h{};
     auto _centered_h = std::span(centered_h);
 
+    // (partial) Step 18: Center coefficients of hint vector h, around 0
     for (size_t row_idx = 0; row_idx < _h.size(); row_idx++) {
       const size_t offset = row_idx * polynomial::N;
 
-      const auto centered = _h[row_idx].center();
+      const auto centered = _h[row_idx].template center<q_𝜈w>();
       std::copy(centered.begin(), centered.end(), _centered_h.subspan(offset, centered.size()).begin());
     }
 
     std::array<int64_t, _collapsed_z.size() * polynomial::N> centered_z{};
     auto _centered_z = std::span(centered_z);
 
+    // Center coefficients of unmasked response vector z, around 0
     for (size_t row_idx = 0; row_idx < _collapsed_z.size(); row_idx++) {
       _collapsed_z[row_idx].intt();
 
-      const auto centered = _collapsed_z[row_idx].center();
+      const auto centered = _collapsed_z[row_idx].template center<field::Q>();
 
       const size_t offset = row_idx * polynomial::N;
       std::copy(centered.begin(), centered.end(), _centered_z.subspan(offset, centered.size()).begin());
     }
 
+    // Step 19: Attempt to serialize signature, given fixed space
     const auto is_encoded = serialization::encode_sig<k, l, 𝜅, sig_len>(c_hash, _centered_h, _centered_z, sig);
     if (!is_encoded) {
+      // Signature can't be serialized within given fixed space, let's retry
       continue;
     }
 
+    // Step 20: If serialization of signature passes, do a final round of sanity check on *raw* signature
     const auto is_under_bounds = checks::check_bounds<k, l, 𝜈w, Binf, B22>(_centered_h, _collapsed_z);
     if (!is_under_bounds) {
+      // Signature is failing norms check, let's retry
       continue;
     }
 
+    // Just signed the message successfully !
     break;
   }
 }
