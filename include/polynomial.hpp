@@ -143,6 +143,28 @@ public:
 
   inline constexpr void operator-=(const polynomial_t& rhs) { *this = *this - rhs; }
 
+  // Subtracts one polynomial from another one s.t. each of their coefficients ∈ [0, q_𝜈w) and
+  // resulting polynomial coefficients are also reduced modulo `q_𝜈w`.
+  template<uint64_t q_𝜈w>
+  inline constexpr polynomial_t sub_mod(const polynomial_t& rhs) const
+  {
+    polynomial_t res{};
+    for (size_t i = 0; i < res.size(); i++) {
+      const auto neg_rhs = q_𝜈w - rhs[i].raw();
+      const auto subtracted = (*this)[i].raw() + neg_rhs;
+
+      // reduction modulo `q_𝜈w`, to ensure that `reduced` ∈ [0, q_𝜈w)
+      const auto t = subtracted - q_𝜈w;
+      const auto mask = -(t >> 63);
+      const auto q_𝜈w_masked = q_𝜈w & mask;
+      const auto reduced = t + q_𝜈w_masked;
+
+      res[i] = reduced;
+    }
+
+    return res;
+  }
+
   // Checks for equality of two polynomials.
   inline constexpr bool operator==(const polynomial_t& rhs) const
   {
