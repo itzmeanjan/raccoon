@@ -104,6 +104,18 @@ struct polynomial_t
 private:
   std::array<field::zq_t, N> coeffs{};
 
+  // Reduces input `x` modulo `q`, s.t. `x` ∈ [0, 2*q).
+  template<uint64_t q>
+  static inline constexpr uint64_t reduce_once_mod(const uint64_t x)
+  {
+    const auto t = x - q;
+    const auto mask = -(t >> 63);
+    const auto q_masked = q & mask;
+    const auto reduced = t + q_masked;
+
+    return reduced;
+  }
+
 public:
   inline constexpr polynomial_t() = default;
   inline constexpr void copy_from(const polynomial_t& src) { std::copy(src.coeffs.begin(), src.coeffs.end(), this->coeffs.begin()); }
@@ -153,13 +165,7 @@ public:
       const auto neg_rhs = q_𝜈w - rhs[i].raw();
       const auto subtracted = (*this)[i].raw() + neg_rhs;
 
-      // reduction modulo `q_𝜈w`, to ensure that `reduced` ∈ [0, q_𝜈w)
-      const auto t = subtracted - q_𝜈w;
-      const auto mask = -(t >> 63);
-      const auto q_𝜈w_masked = q_𝜈w & mask;
-      const auto reduced = t + q_𝜈w_masked;
-
-      res[i] = reduced;
+      res[i] = reduce_once_mod<q_𝜈w>(subtracted);
     }
 
     return res;
@@ -191,10 +197,12 @@ public:
   template<size_t 𝜈t>
   inline constexpr void rounding_shr()
   {
+    constexpr uint64_t q_𝜈t = field::Q >> 𝜈t;
     constexpr uint64_t rounding = 1ul << (𝜈t - 1);
 
     for (size_t i = 0; i < this->size(); i++) {
-      this->coeffs[i] = (this->coeffs[i].raw() + rounding) >> 𝜈t;
+      const auto x = (this->coeffs[i].raw() + rounding) >> 𝜈t;
+      this->coeffs[i] = reduce_once_mod<q_𝜈t>(x);
     }
   }
 
