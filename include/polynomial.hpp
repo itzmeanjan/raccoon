@@ -237,6 +237,26 @@ public:
     return centered_poly;
   }
 
+  // Extends the coefficients of a polynomial in [0, q), given that they are currently centered around 0 i.e. they ∈ [-q/2, q/2).
+  template<uint64_t q>
+  static inline constexpr polynomial_t from_centered(std::span<const int64_t, N> centered)
+  {
+    constexpr auto qby2 = q / 2;
+
+    polynomial_t extended{};
+    for (size_t i = 0; i < centered.size(); i++) {
+      const auto x = centered[i];
+
+      const auto mask = static_cast<uint64_t>(x >> 63);
+      const auto q_masked = static_cast<int64_t>(q & mask);
+      const auto extended_x = static_cast<uint64_t>(x + q_masked);
+
+      extended[i] = extended_x;
+    }
+
+    return extended;
+  }
+
   // Applies number theoretic transform using Cooley-Tukey algorithm, producing polynomial f' s.t. its coefficients are placed in bit-reversed order.
   //
   // Note, this routine mutates input i.e. it's an in-place NTT implementation.
