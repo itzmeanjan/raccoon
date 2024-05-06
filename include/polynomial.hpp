@@ -143,6 +143,19 @@ public:
 
   inline constexpr void operator+=(const polynomial_t& rhs) { *this = *this + rhs; }
 
+  // Performs addition of two polynomials modulo a small moduli `q_𝜈w` s.t. coefficients of input polynomials also ∈ [0, q_𝜈w).
+  template<uint64_t q_𝜈w>
+  inline constexpr polynomial_t add_mod(const polynomial_t& rhs) const
+  {
+    polynomial_t res{};
+    for (size_t i = 0; i < res.size(); i++) {
+      const auto added = (*this)[i].raw() + rhs[i].raw();
+      res[i] = reduce_once_mod<q_𝜈w>(added);
+    }
+
+    return res;
+  }
+
   // Subtraction of one polynomial from another one.
   inline constexpr polynomial_t operator-(const polynomial_t& rhs) const
   {
@@ -241,8 +254,6 @@ public:
   template<uint64_t q>
   static inline constexpr polynomial_t from_centered(std::span<const int64_t, N> centered)
   {
-    constexpr auto qby2 = q / 2;
-
     polynomial_t extended{};
     for (size_t i = 0; i < centered.size(); i++) {
       const auto x = centered[i];
