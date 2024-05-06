@@ -1,9 +1,11 @@
 #pragma once
 #include "field.hpp"
+#include "subtle.hpp"
 #include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <span>
 #include <type_traits>
 
@@ -62,6 +64,20 @@ get_skey_byte_len()
   requires(d > 0)
 {
   return get_pkey_byte_len<𝜅, k, n, 𝜈t>() + ((d - 1) * 𝜅 + l * n * field::Q_BIT_WIDTH) / 8;
+}
+
+// Given two byte arrays of equal length as input, this routine can be used for constant-time checking equality of them.
+// If a == b, it returns a 32 -bit unsigned integer s.t. all of its bits are set to 1.
+// Else, it returns 32 -bit unsigned integer s.t. all of its bits are set to 0.
+template<size_t len>
+static inline constexpr uint32_t
+ct_eq_byte_array(std::span<const uint8_t, len> a, std::span<const uint8_t, len> b)
+{
+  uint32_t res = std::numeric_limits<uint32_t>::max();
+  for (size_t i = 0; i < a.size(); i++) {
+    res &= subtle::ct_eq<uint8_t, uint32_t>(a[i], b[i]);
+  }
+  return res;
 }
 
 }
