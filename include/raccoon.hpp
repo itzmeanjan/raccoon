@@ -292,4 +292,116 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
   }
 }
 
+// Given a Raccon signature, corresponding message (which was signed) and public key of the signer, this routine verifies
+// the validity of the signature, returning boolean truth value in case of success, else returning false.
+// This is an implementation of the algorithm 3 of the specification.
+template<size_t 𝜅, size_t k, size_t l, size_t 𝜈w, size_t 𝜈t, size_t 𝜔, size_t sig_len, uint64_t Binf, uint64_t B22>
+static inline constexpr bool
+verify(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>()> pkey,
+       std::span<const uint8_t> msg,
+       std::span<const uint8_t, sig_len> sig)
+{
+  std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash{};
+  std::array<int64_t, k * polynomial::N> centered_h{};
+  std::array<int64_t, l * polynomial::N> centered_z{};
+
+  auto _centered_h = std::span(centered_h);
+  auto _centered_z = std::span(centered_z);
+
+  // Step 1: Attempt to decode signature into its components
+  const auto is_decoded = serialization::decode_sig<k, l, 𝜅, sig_len>(sig, c_hash, _centered_h, _centered_z);
+  if (!is_decoded) {
+    return false;
+  }
+
+  constexpr uint64_t q_𝜈w = field::Q >> 𝜈w;
+
+  std::array<polynomial::polynomial_t, _centered_h.size() / polynomial::N> h{};
+  std::array<polynomial::polynomial_t, _centered_z.size() / polynomial::N> z{};
+
+  // Change the input range of the polynomial coefficients, preparing for step 2
+  for (size_t row_idx = 0; row_idx < h.size(); row_idx++) {
+    const size_t offset = row_idx * polynomial::N;
+    h[row_idx] = polynomial::polynomial_t::from_centered<q_𝜈w>(std::span<int64_t, polynomial::N>(_centered_h.subspan(offset, polynomial::N)));
+  }
+
+  for (size_t row_idx = 0; row_idx < z.size(); row_idx++) {
+    const size_t offset = row_idx * polynomial::N;
+    z[row_idx] = polynomial::polynomial_t::from_centered<field::Q>(std::span<int64_t, polynomial::N>(_centered_z.subspan(offset, polynomial::N)));
+  }
+
+  // Step 2: Perform norms check
+  const auto is_under_bounds = checks::check_bounds<k, l, 𝜈w, Binf, B22>(_centered_h, z);
+  if (!is_under_bounds) {
+    return false;
+  }
+
+  std::array<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed{};
+  std::array<polynomial::polynomial_t, k> t{};
+
+  // Step 1: Decode public key into its components
+  serialization::decode_public_key<𝜅, k, 𝜈t>(pkey, seed, t);
+
+  std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> 𝜇{};
+
+  // Step 3: Bind public key with message
+  shake256::shake256_t hasher{};
+  hasher.absorb(pkey);
+  hasher.finalize();
+  hasher.squeeze(𝜇);
+  hasher.reset();
+
+  hasher.absorb(𝜇);
+  hasher.absorb(msg);
+  hasher.finalize();
+  hasher.squeeze(𝜇);
+
+  // Step 4: Generate matrix A
+  std::array<polynomial::polynomial_t, k * l> A{};
+  sampling::expandA<k, l, 𝜅>(seed, A);
+
+  // Step 5: Compute challenge polynomial
+  auto c_poly = challenge::chal_poly<𝜅, 𝜔>(c_hash);
+  c_poly.ntt();
+
+  std::array<polynomial::polynomial_t, h.size()> y{};
+
+  // Step 6: Recompute noisy LWE commitment vector y
+  for (size_t row_idx = 0; row_idx < k; row_idx++) {
+    for (size_t col_idx = 0; col_idx < l; col_idx++) {
+      z[col_idx].ntt();
+      y[row_idx] += A[row_idx * l + col_idx] * z[col_idx];
+    }
+  }
+
+  for (size_t row_idx = 0; row_idx < y.size(); row_idx++) {
+    t[row_idx] = t[row_idx] << 𝜈t;
+    t[row_idx].ntt();
+
+    y[row_idx] -= c_poly * t[row_idx];
+    y[row_idx].intt();
+
+    y[row_idx].template rounding_shr<𝜈w>();
+  }
+
+  std::array<polynomial::polynomial_t, y.size()> w{};
+
+  // Step 7: Adjust LWE commitment vector with hint vector, reduced small moduli q_𝜈w
+  for (size_t row_idx = 0; row_idx < w.size(); row_idx++) {
+    w[row_idx] = y[row_idx].template add_mod<q_𝜈w>(h[row_idx]);
+  }
+
+  // Step 8: Recompute challenge hash
+  std::array<uint8_t, c_hash.size()> c_hash_prime{};
+  challenge::chal_hash<k, 𝜅>(w, 𝜇, c_hash_prime);
+
+  using c_hash_t = std::span<const uint8_t, c_hash.size()>;
+
+  // Step 9: Check equality of commitment
+  const auto is_equal = raccoon_utils::ct_eq_byte_array(c_hash_t(c_hash), c_hash_t(c_hash_prime));
+  const auto is_verified = static_cast<bool>(is_equal >> (std::numeric_limits<decltype(is_equal)>::digits - 1));
+
+  return is_verified;
+}
+
 }
