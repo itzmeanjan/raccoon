@@ -293,22 +293,20 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
       const auto abs_x = std::abs(x);
 
       const auto a = abs_x & ((1l << 40) - 1);
-      const auto b = abs_x >> 40;
-      const auto abs_b = static_cast<size_t>(std::abs(b));
+      const auto b = static_cast<size_t>(abs_x >> 40);
 
       buffer |= (static_cast<uint64_t>(a) << buf_bit_off);
       buf_bit_off += 40;
 
-      const uint64_t ones = (1ul << abs_b) - 1;
+      const uint64_t ones = (1ul << b) - 1;
 
       if (x > 0) {
-        buffer |= (((0b00ul << abs_b) | ones) << buf_bit_off);
-        buf_bit_off += (abs_b + 2);
+        buffer |= (((0b00ul << b) | ones) << buf_bit_off);
+        buf_bit_off += (b + 2);
       } else if (x < 0) {
-        buffer |= (((0b10ul << abs_b) | ones) << buf_bit_off);
-        buf_bit_off += (abs_b + 2);
+        buffer |= (((0b10ul << b) | ones) << buf_bit_off);
+        buf_bit_off += (b + 2);
       } else {
-        buffer |= (0b0ul << buf_bit_off);
         buf_bit_off += 1;
       }
     }
