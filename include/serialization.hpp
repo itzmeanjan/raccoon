@@ -347,10 +347,11 @@ get_bit_at(const uint64_t word, const size_t idx)
   return (word >> idx) & 0b1ul;
 }
 
-// Given a 64 -bit buffer s.t. `buf_bit_off` bits, from LSB side, are part of current active buffer, this routine tries to decode a small signed integer
-// from those bits, while also returning how many bits were consumed during decoding.
+// Given a 64 -bit buffer s.t. `buf_bit_off` bits, from LSB side, are part of current active buffer, this routine tries to decode
+// a small signed integer (which is a coefficient of the hint vector `h`), from those bits, while also returning how many bits were
+// consumed during decoding.
 static inline constexpr std::pair<int64_t, size_t>
-decode_bits_as_coeff(const uint64_t buffer, const size_t buf_bit_off)
+decode_bits_as_hint_coeff(const uint64_t buffer, const size_t buf_bit_off)
 {
   int64_t res = 0;
   size_t bit_idx = 0;
@@ -369,6 +370,41 @@ decode_bits_as_coeff(const uint64_t buffer, const size_t buf_bit_off)
   bit_idx++;
 
   // figure out the sign bit
+  if (res > 0) {
+    if (get_bit_at(buffer, bit_idx) == 1) {
+      res = -res;
+    }
+    bit_idx++;
+  }
+
+  return { res, bit_idx };
+}
+
+// Given a 64 -bit buffer s.t. `buf_bit_off` bits, from LSB side, are part of the current active buffer area and a 40 -bit unsigned
+// integer `a` (i.e. low 40 -bits of the resulting coefficient), this routine tries to decode a small signed integer (which forms the
+// high bits of a coefficient of the response vector `z`), from those bits, while returning a signed integer which is ~40 -bits and
+// how many bits were consumed for decoding the high part of the coefficient.
+static inline constexpr std::pair<int64_t, size_t>
+decode_bits_as_response_coeff(const uint64_t buffer, const size_t buf_bit_off, const int64_t a)
+{
+  int64_t b = 0;
+  size_t bit_idx = 0;
+
+  while ((bit_idx < buf_bit_off) && (get_bit_at(buffer, bit_idx) == 1)) {
+    b++;
+    bit_idx++;
+  }
+
+  // exhausted all available bits in the buffer
+  if (bit_idx == buf_bit_off) {
+    return { a, 0 };
+  }
+
+  // skip the stop bit
+  bit_idx++;
+
+  // figure out if there is any sign bit that needs to be read
+  int64_t res = (b << 40) | a;
   if (res > 0) {
     if (get_bit_at(buffer, bit_idx) == 1) {
       res = -res;
@@ -411,7 +447,7 @@ decode_sig(std::span<const uint8_t, sig_len> sig,
 
     int64_t coeff = 0;
     size_t bits_consumed = 0;
-    std::tie(coeff, bits_consumed) = decode_bits_as_coeff(buffer, buf_bit_off);
+    std::tie(coeff, bits_consumed) = decode_bits_as_hint_coeff(buffer, buf_bit_off);
 
     if (bits_consumed > 0) [[likely]] {
       h[h_coeff_idx] = coeff;
@@ -448,18 +484,18 @@ decode_sig(std::span<const uint8_t, sig_len> sig,
     buf_bit_off += (to_be_buffered_num_bytes * std::numeric_limits<uint8_t>::digits);
 
     if (buf_bit_off > 40) [[likely]] {
-      constexpr int64_t mask40 = (1l << 40) - 1;
-      const int64_t a = buffer & mask40;
+      constexpr uint64_t mask40 = (1ul << 40) - 1;
+      const auto a = static_cast<int64_t>(buffer & mask40);
 
       buffer >>= 40;
       buf_bit_off -= 40;
 
-      int64_t b = 0;
+      int64_t coeff = 0;
       size_t bits_consumed = 0;
-      std::tie(b, bits_consumed) = decode_bits_as_coeff(buffer, buf_bit_off);
+      std::tie(coeff, bits_consumed) = decode_bits_as_response_coeff(buffer, buf_bit_off, a);
 
       if (bits_consumed > 0) [[likely]] {
-        z[z_coeff_idx] = (b << 40) | a;
+        z[z_coeff_idx] = coeff;
         z_coeff_idx++;
 
         buf_bit_off -= bits_consumed;
