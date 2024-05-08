@@ -366,10 +366,14 @@ verify(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polyno
 
   std::array<polynomial::polynomial_t, h.size()> y{};
 
+  // Convert response vector z into NTT domain
+  for (size_t row_idx = 0; row_idx < z.size(); row_idx++) {
+    z[row_idx].ntt();
+  }
+
   // Step 6: Recompute noisy LWE commitment vector y
   for (size_t row_idx = 0; row_idx < k; row_idx++) {
     for (size_t col_idx = 0; col_idx < l; col_idx++) {
-      z[col_idx].ntt();
       y[row_idx] += A[row_idx * l + col_idx] * z[col_idx];
     }
   }
