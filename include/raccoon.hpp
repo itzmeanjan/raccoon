@@ -95,6 +95,7 @@ static inline constexpr void
 sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, polynomial::N, 𝜈t>()> skey,
      std::span<const uint8_t> msg,
      std::span<uint8_t, sig_len> sig)
+  requires(d > 0)
 {
   constexpr size_t skey_off0 = 0;
   constexpr size_t skey_off1 = skey_off0 + raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>();
