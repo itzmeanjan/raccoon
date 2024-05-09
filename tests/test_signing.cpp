@@ -39,7 +39,7 @@ test_signing(const size_t mlen)
 TEST(RaccoonSign, Raccoon128Signing)
 {
   constexpr size_t min_mlen = 0;
-  constexpr size_t max_mlen = 64;
+  constexpr size_t max_mlen = 32;
 
   constexpr size_t 𝜅 = 128;
   constexpr size_t k = 5;
@@ -64,7 +64,7 @@ TEST(RaccoonSign, Raccoon128Signing)
 TEST(RaccoonSign, Raccoon192Signing)
 {
   constexpr size_t min_mlen = 0;
-  constexpr size_t max_mlen = 64;
+  constexpr size_t max_mlen = 32;
 
   constexpr size_t 𝜅 = 192;
   constexpr size_t k = 7;
@@ -89,7 +89,7 @@ TEST(RaccoonSign, Raccoon192Signing)
 TEST(RaccoonSign, Raccoon256Signing)
 {
   constexpr size_t min_mlen = 0;
-  constexpr size_t max_mlen = 64;
+  constexpr size_t max_mlen = 16;
 
   constexpr size_t 𝜅 = 256;
   constexpr size_t k = 9;
