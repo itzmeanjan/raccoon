@@ -91,12 +91,12 @@ keygen(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> see
 // Given one (un)masked Raccoon secret key, this routine can be used for signing a message, following algorithm 2 of the specification.
 //
 // When `d = 1`, it's the unmasked case, while for `d > 1`, signing process is masked.
-template<size_t 𝜅, size_t k, size_t l, size_t d, size_t 𝑢w, size_t 𝜈w, size_t 𝜈t, size_t rep, size_t 𝜔, size_t sig_len, uint64_t Binf, uint64_t B22>
+template<size_t 𝜅, size_t k, size_t l, size_t d, size_t 𝑢w, size_t 𝜈w, size_t 𝜈t, size_t rep, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
 static inline constexpr void
 sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, polynomial::N, 𝜈t>()> skey,
      std::span<const uint8_t> msg,
-     std::span<uint8_t, sig_len> sig)
-  requires(d > 0)
+     std::span<uint8_t, sig_byte_len> sig)
+  requires(raccoon_params::validate_sign_args(𝜅, k, l, d, 𝑢w, 𝜈w, 𝜈t, rep, 𝜔, sig_byte_len, Binf, B22))
 {
   constexpr size_t skey_off0 = 0;
   constexpr size_t skey_off1 = skey_off0 + raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>();
@@ -276,7 +276,7 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     }
 
     // Step 19: Attempt to serialize signature, given fixed space
-    const auto is_encoded = serialization::encode_sig<k, l, 𝜅, sig_len>(c_hash, _centered_h, _centered_z, sig);
+    const auto is_encoded = serialization::encode_sig<k, l, 𝜅, sig_byte_len>(c_hash, _centered_h, _centered_z, sig);
     if (!is_encoded) {
       // Signature can't be serialized within given fixed space, let's retry
       continue;
@@ -297,11 +297,11 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
 // Given a Raccon signature, corresponding message (which was signed) and public key of the signer, this routine verifies
 // the validity of the signature, returning boolean truth value in case of success, else returning false.
 // This is an implementation of the algorithm 3 of the specification.
-template<size_t 𝜅, size_t k, size_t l, size_t 𝜈w, size_t 𝜈t, size_t 𝜔, size_t sig_len, uint64_t Binf, uint64_t B22>
+template<size_t 𝜅, size_t k, size_t l, size_t 𝜈w, size_t 𝜈t, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
 static inline constexpr bool
 verify(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>()> pkey,
        std::span<const uint8_t> msg,
-       std::span<const uint8_t, sig_len> sig)
+       std::span<const uint8_t, sig_byte_len> sig)
 {
   std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash{};
   std::array<int64_t, k * polynomial::N> centered_h{};
@@ -311,7 +311,7 @@ verify(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polyno
   auto _centered_z = std::span(centered_z);
 
   // Step 1: Attempt to decode signature into its components
-  const auto is_decoded = serialization::decode_sig<k, l, 𝜅, sig_len>(sig, c_hash, _centered_h, _centered_z);
+  const auto is_decoded = serialization::decode_sig<k, l, 𝜅, sig_byte_len>(sig, c_hash, _centered_h, _centered_z);
   if (!is_decoded) {
     return false;
   }
