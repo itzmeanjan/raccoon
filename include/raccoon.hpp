@@ -302,6 +302,7 @@ static inline constexpr bool
 verify(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>()> pkey,
        std::span<const uint8_t> msg,
        std::span<const uint8_t, sig_byte_len> sig)
+  requires(raccoon_params::validate_verify_args(𝜅, k, l, 𝜈w, 𝜈t, 𝜔, sig_byte_len, Binf, B22))
 {
   std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash{};
   std::array<int64_t, k * polynomial::N> centered_h{};
