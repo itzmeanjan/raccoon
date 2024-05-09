@@ -75,14 +75,14 @@ TEST(RaccoonSign, UnmaskedSecretKeyVectorCompressionAndDecompression)
   test_unmasked_secret_key_vector_compression_decompression<256, 9>();
 }
 
-template<size_t k, size_t l, size_t 𝜅, size_t sig_len>
+template<size_t k, size_t l, size_t 𝜅, size_t sig_byte_len>
 static void
 test_encode_decode_signature_all_zeros()
 {
   std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> orig_c_hash{};
   std::array<int64_t, k * polynomial::N> orig_h{};
   std::array<int64_t, l * polynomial::N> orig_z{};
-  std::array<uint8_t, sig_len> sig{};
+  std::array<uint8_t, sig_byte_len> sig{};
   std::array<uint8_t, orig_c_hash.size()> comp_c_hash{};
   std::array<int64_t, orig_h.size()> comp_h{};
   std::array<int64_t, orig_z.size()> comp_z{};
@@ -102,8 +102,8 @@ test_encode_decode_signature_all_zeros()
   std::fill(comp_h.begin(), comp_h.end(), std::numeric_limits<int64_t>::max());
   std::fill(comp_z.begin(), comp_z.end(), std::numeric_limits<int64_t>::max());
 
-  const auto is_encoded = serialization::encode_sig<k, l, 𝜅, sig_len>(orig_c_hash, orig_h, orig_z, sig);
-  const auto is_decoded = serialization::decode_sig<k, l, 𝜅, sig_len>(sig, comp_c_hash, comp_h, comp_z);
+  const auto is_encoded = serialization::encode_sig<k, l, 𝜅, sig_byte_len>(orig_c_hash, orig_h, orig_z, sig);
+  const auto is_decoded = serialization::decode_sig<k, l, 𝜅, sig_byte_len>(sig, comp_c_hash, comp_h, comp_z);
 
   EXPECT_TRUE(is_encoded);
   EXPECT_TRUE(is_decoded);

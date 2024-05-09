@@ -205,14 +205,14 @@ mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * polynomial::N * f
 
 // Byte encodes a signature sig = (c_hash, h, z), following section 2.5.1 of the Raccoon specification.
 //
-// In case signature can *not* be encoded into fixed byte length `sig_len`, it returns false, otherwise
+// In case signature can *not* be encoded into fixed byte length `sig_byte_len`, it returns false, otherwise
 // (i.e. in case of successful signature encoding ) it returns true.
-template<size_t k, size_t l, size_t 𝜅, size_t sig_len>
+template<size_t k, size_t l, size_t 𝜅, size_t sig_byte_len>
 static inline constexpr bool
 encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
            std::span<const int64_t, k * polynomial::N> h,
            std::span<const int64_t, l * polynomial::N> z,
-           std::span<uint8_t, sig_len> sig)
+           std::span<uint8_t, sig_byte_len> sig)
 {
   bool encodable = true;
   size_t sig_off = 0;
@@ -231,7 +231,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
         const size_t writeable_bitcnt = buf_bit_off & (-8ul);
         const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
 
-        if ((sig_off + writeable_bytecnt) > sig_len) {
+        if ((sig_off + writeable_bytecnt) > sig_byte_len) {
           encodable = false;
           break;
         }
@@ -277,7 +277,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
         const size_t writeable_bitcnt = buf_bit_off & (-8ul);
         const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
 
-        if ((sig_off + writeable_bytecnt) > sig_len) {
+        if ((sig_off + writeable_bytecnt) > sig_byte_len) {
           encodable = false;
           break;
         }
@@ -324,7 +324,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
     const size_t writeable_bitcnt = (buf_bit_off + 7) & (-8ul);
     const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
 
-    if ((sig_off + writeable_bytecnt) > sig_len) {
+    if ((sig_off + writeable_bytecnt) > sig_byte_len) {
       encodable = false;
       return encodable;
     }
@@ -336,7 +336,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
     buffer >>= writeable_bitcnt;
   }
 
-  std::fill_n(sig.subspan(sig_off).begin(), sig_len - sig_off, 0x00);
+  std::fill_n(sig.subspan(sig_off).begin(), sig_byte_len - sig_off, 0x00);
   return encodable;
 }
 
@@ -418,9 +418,9 @@ decode_bits_as_response_coeff(const uint64_t buffer, const size_t buf_bit_off, c
 // Decodes a byte encoded signature as (c_hash, h, z), following section 2.5.1 of the Raccoon specification.
 //
 // In case signature decoding fails, it returns false, else it returns true.
-template<size_t k, size_t l, size_t 𝜅, size_t sig_len>
+template<size_t k, size_t l, size_t 𝜅, size_t sig_byte_len>
 static inline constexpr bool
-decode_sig(std::span<const uint8_t, sig_len> sig,
+decode_sig(std::span<const uint8_t, sig_byte_len> sig,
            std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
            std::span<int64_t, k * polynomial::N> h,
            std::span<int64_t, l * polynomial::N> z)
@@ -435,11 +435,11 @@ decode_sig(std::span<const uint8_t, sig_len> sig,
   size_t buf_bit_off = 0;
 
   size_t h_coeff_idx = 0;
-  while ((sig_off < sig_len) && (h_coeff_idx < h.size())) {
+  while ((sig_off < sig_byte_len) && (h_coeff_idx < h.size())) {
     const size_t bufferable_num_bits = std::numeric_limits<uint64_t>::digits - buf_bit_off;
     const size_t readable_num_bits = bufferable_num_bits & (-8ul);
     const size_t readable_num_bytes = readable_num_bits / std::numeric_limits<uint8_t>::digits;
-    const size_t to_be_buffered_num_bytes = std::min(readable_num_bytes, sig_len - sig_off);
+    const size_t to_be_buffered_num_bytes = std::min(readable_num_bytes, sig_byte_len - sig_off);
 
     const auto word = raccoon_utils::from_le_bytes<uint64_t>(sig.subspan(sig_off, to_be_buffered_num_bytes));
     buffer |= (word << buf_bit_off);
@@ -467,17 +467,17 @@ decode_sig(std::span<const uint8_t, sig_len> sig,
     return decodable;
   }
 
-  if ((sig_off == sig_len) || (h_coeff_idx != h.size())) {
+  if ((sig_off == sig_byte_len) || (h_coeff_idx != h.size())) {
     decodable = false;
     return decodable;
   }
 
   size_t z_coeff_idx = 0;
-  while ((sig_off < sig_len) && (z_coeff_idx < z.size())) {
+  while ((sig_off < sig_byte_len) && (z_coeff_idx < z.size())) {
     const size_t bufferable_num_bits = std::numeric_limits<uint64_t>::digits - buf_bit_off;
     const size_t readable_num_bits = bufferable_num_bits & (-8ul);
     const size_t readable_num_bytes = readable_num_bits / std::numeric_limits<uint8_t>::digits;
-    const size_t to_be_buffered_num_bytes = std::min(readable_num_bytes, sig_len - sig_off);
+    const size_t to_be_buffered_num_bytes = std::min(readable_num_bytes, sig_byte_len - sig_off);
 
     const auto word = raccoon_utils::from_le_bytes<uint64_t>(sig.subspan(sig_off, to_be_buffered_num_bytes));
     buffer |= (word << buf_bit_off);
@@ -530,7 +530,7 @@ decode_sig(std::span<const uint8_t, sig_len> sig,
     return decodable;
   }
 
-  auto remaining_sig = sig.subspan(sig_off, sig_len - sig_off);
+  auto remaining_sig = sig.subspan(sig_off, sig_byte_len - sig_off);
   for (auto byte : remaining_sig) {
     decodable &= (byte == 0);
   }
