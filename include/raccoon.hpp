@@ -3,6 +3,7 @@
 #include "challenge.hpp"
 #include "gadgets.hpp"
 #include "mrng.hpp"
+#include "params.hpp"
 #include "polynomial.hpp"
 #include "prng.hpp"
 #include "sampling.hpp"
@@ -20,7 +21,7 @@ static inline constexpr void
 keygen(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed,
        std::span<uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, polynomial::N, 𝜈t>()> pkey,
        std::span<uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, polynomial::N, 𝜈t>()> skey)
-  requires(d > 0)
+  requires(raccoon_params::validate_keygen_args(𝜅, k, l, d, 𝑢t, 𝜈t, rep))
 {
   // Step 2: Generate matrix A
   std::array<polynomial::polynomial_t, k * l> A{};
