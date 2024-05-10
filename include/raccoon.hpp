@@ -112,6 +112,14 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
 
   // Step 1: Decode secret key and public key into its components
   serialization::decode_public_key<𝜅, k, 𝜈t>(pkey, seed, t);
+
+  // Scale public key vector `t` from Z𝑞t to Z𝑞 and compute its NTT representation, outside of the sign retry loop,
+  // so that we don't have to repeat/ undo this step there.
+  for (size_t row_idx = 0; row_idx < t.size(); row_idx++) {
+    t[row_idx] = t[row_idx] << 𝜈t;
+    t[row_idx].ntt();
+  }
+
   serialization::mask_decompress<𝜅, l, d>(s_c, _s);
 
   std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> 𝜇{};
@@ -133,12 +141,12 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
   std::array<polynomial::polynomial_t, k * l> A{};
   sampling::expandA<k, l, 𝜅>(seed, A);
 
+  prng::prng_t prng{};
+  mrng::mrng_t<d> mrng{};
+
   while (true) {
     std::array<polynomial::polynomial_t, _s.size()> r{};
     auto _r = std::span(r);
-
-    prng::prng_t prng{};
-    mrng::mrng_t<d> mrng{};
 
     // Step 4: Generate masked zero vector [[r]]
     for (size_t i = 0; i < l; i++) {
@@ -193,9 +201,12 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     c_poly.ntt();
 
     // Step 12: Refresh masked secret key vector [[s]]
-    // Step 13: Refresh masked vector [[r]]
     for (size_t row_idx = 0; row_idx < l; row_idx++) {
       gadgets::refresh<d>(std::span<polynomial::polynomial_t, d>(_s.subspan(row_idx * d, d)), mrng);
+    }
+
+    // Step 13: Refresh masked vector [[r]]
+    for (size_t row_idx = 0; row_idx < l; row_idx++) {
       gadgets::refresh<d>(std::span<polynomial::polynomial_t, d>(_r.subspan(row_idx * d, d)), mrng);
     }
 
@@ -231,9 +242,6 @@ sign(std::span<const uint8_t, raccoon_utils::get_skey_byte_len<𝜅, k, l, d, po
     }
 
     for (size_t row_idx = 0; row_idx < t.size(); row_idx++) {
-      t[row_idx] = t[row_idx] << 𝜈t;
-      t[row_idx].ntt();
-
       _y[row_idx] -= c_poly * t[row_idx];
       _y[row_idx].intt();
 
