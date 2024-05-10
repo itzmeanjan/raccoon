@@ -89,7 +89,7 @@ TEST(RaccoonSign, Raccoon192Signing)
 TEST(RaccoonSign, Raccoon256Signing)
 {
   constexpr size_t min_mlen = 0;
-  constexpr size_t max_mlen = 16;
+  constexpr size_t max_mlen = 32;
 
   constexpr size_t 𝜅 = 256;
   constexpr size_t k = 9;
