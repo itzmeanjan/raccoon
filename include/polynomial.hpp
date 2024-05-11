@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <limits>
 
 namespace polynomial {
 
@@ -158,6 +159,36 @@ public:
     }
 
     return res;
+  }
+
+  // Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for mapping them to a polynomial f, following algorithm 5 of
+  // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+  //
+  // This routine is invoked when expanding seed for computing public matrix A.
+  template<size_t 𝜅>
+    requires(d == 1)
+  inline constexpr void sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
+  {
+    shake256::shake256_t xof;
+    xof.absorb(hdr);
+    xof.absorb(𝜎);
+    xof.finalize();
+
+    for (size_t i = 0; i < this->coeffs.size(); i++) {
+      uint64_t f_i = 0;
+
+      do {
+        std::array<uint8_t, (field::Q_BIT_WIDTH + 7) / 8> b{};
+        xof.squeeze(b);
+
+        constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+
+        const auto b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
+        f_i = b_word & mask49;
+      } while (f_i >= field::Q);
+
+      (*this)[{ 0, i }] = f_i;
+    }
   }
 };
 
