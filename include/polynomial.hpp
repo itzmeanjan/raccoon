@@ -130,6 +130,39 @@ private:
     return poly;
   }
 
+  // Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for uniform sampling a polynomial s.t. each of its
+  // coefficients ∈ [-2^(u-1), 2^(u-1)), following algorithm 7 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+  template<size_t u, size_t 𝜅>
+  static inline constexpr std::array<int64_t, N> sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
+    requires(u > 0)
+  {
+    std::array<int64_t, N> f{};
+
+    shake256::shake256_t xof;
+    xof.absorb(hdr);
+    xof.absorb(𝜎);
+    xof.finalize();
+
+    constexpr uint64_t mask_msb = 1ul << (u - 1);
+    constexpr uint64_t mask_lsb = mask_msb - 1;
+
+    constexpr size_t squeezable_bytes = (u + 7) / 8;
+    std::array<uint8_t, squeezable_bytes> b{};
+
+    for (size_t coeff_idx = 0; coeff_idx < f.size(); coeff_idx++) {
+      xof.squeeze(b);
+
+      const uint64_t b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
+      const auto msb = static_cast<int64_t>(b_word & mask_msb);
+      const auto lsb = static_cast<int64_t>(b_word & mask_lsb);
+
+      const auto coeff = lsb - msb;
+      f[coeff_idx] = coeff;
+    }
+
+    return f;
+  }
+
 public:
   // Constructor(s)
   inline constexpr masked_poly_t() = default;
@@ -291,6 +324,40 @@ public:
     }
 
     return collapsed_poly;
+  }
+
+  // Adds small uniform noise to each share of the `d` -sharing (masked) polynomial `a`, while implementing
+  // Sum of Uniforms (SU) distribution in masked domain, following algorithm 8 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+  //
+  // Each time noise is added, polynomial is refreshed and this operation is repeated `rep` -many times.
+  template<size_t u, size_t rep, size_t 𝜅>
+  inline constexpr void add_rep_noise(const size_t idx, prng::prng_t& prng, mrng::mrng_t<d>& mrng)
+  {
+    std::array<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎{};
+
+    for (size_t i_rep = 0; i_rep < rep; i_rep++) {
+      for (size_t sidx = 0; sidx < d; sidx++) {
+        prng.read(𝜎);
+
+        uint64_t hdr_u = 0;
+        hdr_u |= (static_cast<uint64_t>(sidx) << 24) | (static_cast<uint64_t>(idx) << 16) | (static_cast<uint64_t>(i_rep) << 8) | static_cast<uint64_t>('u');
+
+        const auto poly_u = sampleU<u, 𝜅>(std::span<const uint8_t, sizeof(hdr_u)>(reinterpret_cast<uint8_t*>(&hdr_u), sizeof(hdr_u)), 𝜎);
+
+        for (size_t coeff_idx = 0; coeff_idx < poly_u.size(); coeff_idx++) {
+          const auto coeff = static_cast<int64_t>((*this)[{ sidx, coeff_idx }].raw()) + poly_u[coeff_idx];
+
+          const auto is_lt_zero = -(static_cast<uint64_t>(coeff) >> ((sizeof(coeff) * 8) - 1));
+          const auto is_ge_q = subtle::ct_ge<uint64_t, uint64_t>(static_cast<uint64_t>(coeff & ~is_lt_zero), field::Q);
+
+          const auto normalized_coeff = static_cast<uint64_t>(static_cast<int64_t>(field::Q & is_lt_zero) + coeff - static_cast<int64_t>(field::Q & is_ge_q));
+
+          (*this)[{ sidx, coeff_idx }] = field::zq_t(normalized_coeff);
+        }
+      }
+
+      this->refresh(mrng);
+    }
   }
 };
 
