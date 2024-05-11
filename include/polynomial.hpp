@@ -99,6 +99,68 @@ compute_neg_powers_of_ζ()
 // Precomputed table of negated powers of ζ, used when computing iNTT.
 constexpr auto ζ_NEG_EXP = compute_neg_powers_of_ζ();
 
+// Degree 511 polynomial over Zq | q = 549824583172097, with support for masking.
+template<size_t d>
+  requires(d > 0)
+struct masked_poly_t
+{
+private:
+  std::array<field::zq_t, N * d> coeffs{};
+
+public:
+  inline constexpr masked_poly_t() = default;
+
+  // Access the polynomial coefficient at index (sidx, cidx), assuming `sidx < d` and `cidx < N`
+  inline constexpr field::zq_t& operator[](const std::pair<size_t, size_t> idx) { return this->coeffs[(idx.first * N) + idx.second]; };
+  inline constexpr const field::zq_t& operator[](const std::pair<size_t, size_t> idx) const { return this->coeffs[(idx.first * N) + idx.second]; };
+
+  // Addition of two polynomials.
+  inline constexpr masked_poly_t operator+(const masked_poly_t& rhs) const
+  {
+    masked_poly_t res{};
+
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        res[{ sidx, cidx }] = (*this)[{ sidx, cidx }] + rhs[{ sidx, cidx }];
+      }
+    }
+
+    return res;
+  }
+
+  inline constexpr void operator+=(const masked_poly_t& rhs) { *this = *this + rhs; }
+
+  // Subtraction of one polynomial from another one.
+  inline constexpr masked_poly_t operator-(const masked_poly_t& rhs) const
+  {
+    masked_poly_t res{};
+
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        res[{ sidx, cidx }] = (*this)[{ sidx, cidx }] - rhs[{ sidx, cidx }];
+      }
+    }
+
+    return res;
+  }
+
+  inline constexpr void operator-=(const masked_poly_t& rhs) { *this = *this - rhs; }
+
+  // Multiplies two polynomials, assuming both inputs are in their number theoretic representation. Hence the computed output is also in NTT domain.
+  inline constexpr masked_poly_t operator*(const masked_poly_t& rhs) const
+  {
+    masked_poly_t res{};
+
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        res[{ sidx, cidx }] = (*this)[{ sidx, cidx }] * rhs[{ sidx, cidx }];
+      }
+    }
+
+    return res;
+  }
+};
+
 // Degree 511 polynomial over Zq | q = 549824583172097
 struct polynomial_t
 {
