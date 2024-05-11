@@ -276,6 +276,22 @@ public:
 
     (*this) += z;
   }
+
+  // Returns the standard representation of a masked (d -sharing) polynomial.
+  //
+  // This is an implementation of algorithm 13 of the Raccoon specification.
+  inline constexpr masked_poly_t<1> decode()
+  {
+    masked_poly_t<1> collapsed_poly{};
+
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        collapsed_poly[{ 0, cidx }] += (*this)[{ sidx, cidx }];
+      }
+    }
+
+    return collapsed_poly;
+  }
 };
 
 // Degree 511 polynomial over Zq | q = 549824583172097
