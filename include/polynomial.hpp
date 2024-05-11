@@ -108,8 +108,41 @@ struct masked_poly_t
 private:
   std::array<field::zq_t, N * d> coeffs{};
 
+  // Uniform random sampling of polynomial using a Masked Random Number Generator, following implementation @
+  // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
+  static inline constexpr masked_poly_t<1> sample_polynomial(const size_t sidx, mrng::mrng_t<d>& mrng)
+    requires(d > 1)
+  {
+    constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+    masked_poly_t<1> poly{};
+
+    size_t cidx = 0;
+    while (cidx < poly.coeffs.size()) {
+      const auto v = mrng.get(sidx);
+      const auto coeff = v & mask49;
+
+      if (coeff < field::Q) {
+        poly[{ 0, cidx }] = coeff;
+        cidx++;
+      }
+    }
+
+    return poly;
+  }
+
 public:
+  // Constructor(s)
   inline constexpr masked_poly_t() = default;
+
+  // Behaves like std::fill, filling (un)masked polynomial coefficients with same Zq value.
+  inline constexpr void fill_with(const field::zq_t v)
+  {
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        (*this)[{ sidx, cidx }] = v;
+      }
+    }
+  }
 
   // Access the polynomial coefficient at index (sidx, cidx), assuming `sidx < d` and `cidx < N`
   inline constexpr field::zq_t& operator[](const std::pair<size_t, size_t> idx) { return this->coeffs[(idx.first * N) + idx.second]; };
@@ -188,6 +221,48 @@ public:
       } while (f_i >= field::Q);
 
       (*this)[{ 0, i }] = f_i;
+    }
+  }
+
+  // Returns a masked (d -sharing) encoding of polynomial s.t. when decoded to its standard form, each of `n` coefficents
+  // of the polynomials will have canonical value of 0.
+  //
+  // This is an implementation of algorithm 12 of the Raccoon specification.
+  //
+  // This implementation collects a lot of inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-c/racc_core.c#L71-L102
+  inline constexpr void zero_encoding(mrng::mrng_t<d>& mrng)
+  {
+    this->fill_with(field::zq_t::zero());
+
+    if constexpr (d > 1) {
+      for (size_t sidx = 0; sidx < d; sidx += 2) {
+        const auto r = masked_poly_t::sample_polynomial(sidx, mrng);
+
+        for (size_t cidx = 0; cidx < N; cidx++) {
+          (*this)[{ sidx, cidx }] += r[{ 0, cidx }];
+        }
+        for (size_t cidx = 0; cidx < N; cidx++) {
+          (*this)[{ sidx + 1, cidx }] -= r[{ 0, cidx }];
+        }
+      }
+
+      size_t d_idx = 2;
+      while (d_idx < d) {
+        for (size_t i = 0; i < d; i += 2 * d_idx) {
+          for (size_t sidx = i; sidx < i + d_idx; sidx++) {
+            const auto r = masked_poly_t::sample_polynomial(sidx, mrng);
+
+            for (size_t cidx = 0; cidx < N; cidx++) {
+              (*this)[{ sidx, cidx }] += r[{ 0, cidx }];
+            }
+            for (size_t cidx = 0; cidx < N; cidx++) {
+              (*this)[{ sidx + d_idx, cidx }] -= r[{ 0, cidx }];
+            }
+          }
+        }
+
+        d_idx <<= 1;
+      }
     }
   }
 };
