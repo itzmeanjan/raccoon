@@ -11,15 +11,18 @@ template<size_t rows, size_t cols>
 struct poly_mat_t
 {
 private:
-  std::array<polynomial::polynomial_t, rows * cols> elems{};
+  std::array<polynomial::masked_poly_t<1>, rows * cols> elems{};
 
 public:
   // Constructor(s)
   inline constexpr poly_mat_t() = default;
 
   // Access element at index (ridx, cidx) of the matrix s.t. `ridx < rows` and `cidx < cols`.
-  inline constexpr polynomial::polynomial_t& operator[](const std::pair<size_t, size_t> idx) { return this->elems[idx.first * cols + idx.second]; }
-  inline constexpr const polynomial::polynomial_t& operator[](const std::pair<size_t, size_t> idx) const { return this->elems[idx.first * cols + idx.second]; }
+  inline constexpr polynomial::masked_poly_t<1>& operator[](const std::pair<size_t, size_t> idx) { return this->elems[idx.first * cols + idx.second]; }
+  inline constexpr const polynomial::masked_poly_t<1>& operator[](const std::pair<size_t, size_t> idx) const
+  {
+    return this->elems[idx.first * cols + idx.second];
+  }
 
   // Add two matrices of equal dimension
   inline constexpr poly_mat_t operator+(const poly_mat_t<rows, cols>& rhs) const
@@ -53,26 +56,23 @@ public:
 
   inline constexpr poly_mat_t operator-=(const poly_mat_t<rows, cols>& rhs) { *this = *this - rhs; }
 
-  // Multiplies two matrices of compatible dimensions s.t. all element polynomials are expected to be in their number theoretic representation.
-  template<size_t rhs_rows, size_t rhs_cols>
-    requires(cols == rhs_rows)
-  inline constexpr poly_mat_t<rows, rhs_cols> operator*(const poly_mat_t<rhs_rows, rhs_cols>& rhs) const
+  // Given `𝜅` -bits seed as input, this routine is used for generating public matrix A, following algorithm 6 of
+  // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+  template<size_t k, size_t l, size_t 𝜅>
+  static inline constexpr poly_mat_t<k, l> expandA(std::span<const uint8_t, 𝜅 / 8> seed)
   {
-    poly_mat_t<rows, rhs_cols> res{};
+    poly_mat_t<k, l> A{};
 
-    for (size_t ridx = 0; ridx < rows; ridx++) {
-      for (size_t cidx = 0; cidx < rhs_cols; cidx++) {
-        polynomial::polynomial_t tmp{};
+    for (size_t ridx = 0; ridx < k; ridx++) {
+      for (size_t cidx = 0; cidx < l; cidx++) {
+        uint64_t hdr = 0;
+        hdr |= (static_cast<uint64_t>(cidx) << 16) | (static_cast<uint64_t>(ridx) << 8) | (static_cast<uint64_t>('A') << 0);
 
-        for (size_t k = 0; k < cols; k++) {
-          tmp += (*this)[{ ridx, k }] * rhs[{ k, cidx }];
-        }
-
-        res[{ ridx, cidx }] = tmp;
+        A[{ ridx, cidx }].template sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)), seed);
       }
     }
 
-    return res;
+    return A;
   }
 };
 
