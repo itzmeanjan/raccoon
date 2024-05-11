@@ -265,6 +265,17 @@ public:
       }
     }
   }
+
+  // Returns a fresh d -sharing of the input polynomial, using `zero_encoding` as a subroutine.
+  //
+  // This is an implementation of algorithm 11 of the Raccoon specification.
+  inline constexpr void refresh(mrng::mrng_t<d>& mrng)
+  {
+    masked_poly_t<d> z{};
+    z.zero_encoding(mrng);
+
+    (*this) += z;
+  }
 };
 
 // Degree 511 polynomial over Zq | q = 549824583172097
