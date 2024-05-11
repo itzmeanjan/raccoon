@@ -117,7 +117,7 @@ private:
     masked_poly_t<1> poly{};
 
     size_t cidx = 0;
-    while (cidx < poly.coeffs.size()) {
+    while (cidx < N) {
       const auto v = mrng.get(sidx);
       const auto coeff = v & mask49;
 
