@@ -359,6 +359,67 @@ public:
       this->refresh(mrng);
     }
   }
+
+  // Applies number theoretic transform using Cooley-Tukey algorithm, producing polynomial f' s.t. its coefficients are placed in bit-reversed order.
+  //
+  // Note, this routine mutates input i.e. it's an in-place NTT implementation.
+  // Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
+  inline constexpr void ntt()
+  {
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      // Run through each share of the masked polynomial and apply NTT
+      for (int64_t l = LOG2N - 1; l >= 0; l--) {
+        const size_t len = 1ul << l;
+        const size_t lenx2 = len << 1;
+        const size_t k_beg = N >> (l + 1);
+
+        for (size_t start = 0; start < N; start += lenx2) {
+          const size_t k_now = k_beg + (start >> (l + 1));
+          const field::zq_t ζ_exp = ζ_EXP[k_now];
+
+          for (size_t i = start; i < start + len; i++) {
+            auto tmp = ζ_exp * (*this)[{ sidx, i + len }];
+
+            (*this)[{ sidx, i + len }] = (*this)[{ sidx, i }] - tmp;
+            (*this)[{ sidx, i }] += tmp;
+          }
+        }
+      }
+    }
+  }
+
+  // Applies inverse number theoretic transform using Gentleman-Sande algorithm, producing polynomial f' s.t. its coefficients are placed in usual order.
+  //
+  // Note, this routine mutates input i.e. it's an in-place iNTT implementation. Also it expects the input polynomial to have coefficients placed in
+  // bit-reversed order. Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
+  inline constexpr void intt()
+  {
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      // Run through each share of the masked polynomial and apply inverse NTT
+      for (size_t l = 0; l < LOG2N; l++) {
+        const size_t len = 1ul << l;
+        const size_t lenx2 = len << 1;
+        const size_t k_beg = (N >> l) - 1;
+
+        for (size_t start = 0; start < N; start += lenx2) {
+          const size_t k_now = k_beg - (start >> (l + 1));
+          const field::zq_t neg_ζ_exp = ζ_NEG_EXP[k_now];
+
+          for (size_t i = start; i < start + len; i++) {
+            const auto tmp = (*this)[{ sidx, i }];
+
+            (*this)[{ sidx, i }] += (*this)[{ sidx, i + len }];
+            (*this)[{ sidx, i + len }] = tmp - (*this)[{ sidx, i + len }];
+            (*this)[{ sidx, i + len }] *= neg_ζ_exp;
+          }
+        }
+      }
+
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        (*this)[{ sidx, cidx }] *= INV_N;
+      }
+    }
+  }
 };
 
 // Degree 511 polynomial over Zq | q = 549824583172097
