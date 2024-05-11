@@ -42,5 +42,21 @@ public:
       (*this)[ridx].template add_rep_noise<u, rep, 𝜅>(ridx, prng, mrng);
     }
   }
+
+  // Apply element-wise Number Theoretic Transform.
+  inline constexpr void ntt()
+  {
+    for (size_t ridx = 0; ridx < rows; ridx++) {
+      (*this)[ridx].ntt();
+    }
+  }
+
+  // Apply element-wise Inverse Number Theoretic Transform.
+  inline constexpr void intt()
+  {
+    for (size_t ridx = 0; ridx < rows; ridx++) {
+      (*this)[ridx].intt();
+    }
+  }
 };
 }
