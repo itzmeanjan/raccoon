@@ -31,6 +31,16 @@ public:
 
     return vec;
   }
-};
 
+  // Adds small uniform noise to each masked polynomial of the column vector.
+  // This function implements Sum of Uniforms (SU) distribution in masked domain, following algorithm 8 of
+  // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
+  template<size_t u, size_t rep, size_t 𝜅>
+  inline constexpr void add_rep_noise(prng::prng_t& prng, mrng::mrng_t<d>& mrng)
+  {
+    for (size_t ridx = 0; ridx < rows; ridx++) {
+      (*this)[ridx].template add_rep_noise<u, rep, 𝜅>(ridx, prng, mrng);
+    }
+  }
+};
 }
