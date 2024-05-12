@@ -1,4 +1,5 @@
 #pragma once
+#include "poly_vec.hpp"
 #include "polynomial.hpp"
 #include <array>
 #include <cstddef>
@@ -55,6 +56,27 @@ public:
   }
 
   inline constexpr poly_mat_t operator-=(const poly_mat_t<rows, cols>& rhs) { *this = *this - rhs; }
+
+  // Multiply a matrix by another vector of compatible dimension, assuming both of them are in their NTT representation.
+  template<size_t d>
+  inline constexpr poly_vec::poly_vec_t<rows, d> operator*(const poly_vec::poly_vec_t<cols, d>& rhs) const
+  {
+    poly_vec::poly_vec_t<rows, d> res{};
+
+    for (size_t row_idx = 0; row_idx < rows; row_idx++) {
+      for (size_t col_idx = 0; col_idx < cols; col_idx++) {
+        for (size_t shr_idx = 0; shr_idx < d; shr_idx++) {
+
+          // Multiply two equal degree polynomials in their NTT representation
+          for (size_t coeff_idx = 0; coeff_idx < polynomial::N; coeff_idx++) {
+            res[row_idx][{ shr_idx, coeff_idx }] += (*this)[{ row_idx, col_idx }][{ shr_idx, coeff_idx }] * rhs[col_idx][{ shr_idx, coeff_idx }];
+          }
+        }
+      }
+    }
+
+    return res;
+  }
 
   // Given `𝜅` -bits seed as input, this routine is used for generating public matrix A, following algorithm 6 of
   // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
