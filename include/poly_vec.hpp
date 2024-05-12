@@ -57,6 +57,16 @@ public:
     return collapsed_vec;
   }
 
+  // Rounding and right shift of each polynomial, while finally reducing by moduli `Q_prime = floor(Q / 2^bit_offset)`.
+  template<size_t bit_offset>
+    requires(d == 1)
+  inline constexpr void rounding_shr()
+  {
+    for (size_t ridx = 0; ridx < rows; ridx++) {
+      (*this)[ridx].template rounding_shr<bit_offset>();
+    }
+  }
+
   // Apply element-wise Number Theoretic Transform.
   inline constexpr void ntt()
   {

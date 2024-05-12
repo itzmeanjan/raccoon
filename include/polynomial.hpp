@@ -108,6 +108,18 @@ struct masked_poly_t
 private:
   std::array<field::zq_t, N * d> coeffs{};
 
+  // Reduces input `x` modulo `q`, s.t. `x` ∈ [0, 2*q).
+  template<uint64_t q>
+  static inline constexpr uint64_t reduce_once_mod(const uint64_t x)
+  {
+    const auto t = x - q;
+    const auto mask = -(t >> 63);
+    const auto q_masked = q & mask;
+    const auto reduced = t + q_masked;
+
+    return reduced;
+  }
+
   // Uniform random sampling of polynomial using a Masked Random Number Generator, following implementation @
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
   static inline constexpr masked_poly_t<1> sample_polynomial(const size_t sidx, mrng::mrng_t<d>& mrng)
@@ -324,6 +336,25 @@ public:
     }
 
     return collapsed_poly;
+  }
+
+  // Rounding shift right of each coefficient of the (un)masked polynomial and finally reduction by moduli `Q_prime = floor(Q / 2^bit_offset)`,
+  // following *Programming note* section on top of page 12 of Raccoon specification.
+  template<size_t bit_offset>
+  inline constexpr void rounding_shr()
+  {
+    constexpr uint64_t Q_prime = field::Q >> bit_offset;
+    constexpr uint64_t rounding = 1ul << (bit_offset - 1);
+
+    for (size_t sidx = 0; sidx < d; sidx++) {
+      for (size_t cidx = 0; cidx < N; cidx++) {
+        const auto x = (*this)[{ sidx, cidx }].raw();
+        const auto shifted = (x + rounding) >> bit_offset;
+        const auto reduced = reduce_once_mod<Q_prime>(shifted);
+
+        (*this)[{ sidx, cidx }] = reduced;
+      }
+    }
   }
 
   // Adds small uniform noise to each share of the `d` -sharing (masked) polynomial `a`, while implementing
