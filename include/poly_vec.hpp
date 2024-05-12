@@ -43,6 +43,20 @@ public:
     }
   }
 
+  // Returns the standard representation of a masked (d -sharing) polynomial vector.
+  //
+  // This is an implementation of algorithm 13 of the Raccoon specification, extended to a vector.
+  inline constexpr poly_vec_t<rows, 1> decode()
+  {
+    poly_vec_t<rows, 1> collapsed_vec{};
+
+    for (size_t ridx = 0; ridx < rows; ridx++) {
+      collapsed_vec[ridx] = (*this)[{ ridx }].decode();
+    }
+
+    return collapsed_vec;
+  }
+
   // Apply element-wise Number Theoretic Transform.
   inline constexpr void ntt()
   {
