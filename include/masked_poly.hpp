@@ -1,7 +1,7 @@
 #pragma once
 #include "poly.hpp"
 
-namespace masked_poly {
+namespace raccoon_masked_poly {
 
 // (Un)masked degree-511 polynomial, defined over Zq
 template<size_t d>
