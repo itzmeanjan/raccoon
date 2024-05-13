@@ -369,27 +369,29 @@ public:
   // Uniform random sampling of degree n-1 polynomial using a Masked Random Number Generator, following implementation @
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
   template<size_t d>
-  inline constexpr void sample_polynomial(const size_t idx, mrng::mrng_t<d>& mrng)
+  static inline constexpr poly_t sample_polynomial(const size_t idx, mrng::mrng_t<d>& mrng)
     requires(d > 1)
   {
+    poly_t res{};
+
     if (idx >= (d - 1)) [[unlikely]] {
-      this->fill_with(0);
-      return;
+      return res;
     }
 
     constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
 
-    for (size_t i = 0; i < this->size(); i++) {
-      uint64_t poly_i = 0;
+    size_t coeff_idx = 0;
+    while (coeff_idx < res.size()) {
+      const uint64_t v = mrng.get(idx);
+      const uint64_t coeff = v & mask49;
 
-      do {
-        const auto v = mrng.get(idx);
-
-        poly_i = v & mask49;
-      } while (poly_i >= field::Q);
-
-      (*this)[i] = poly_i;
+      if (coeff < field::Q) {
+        res[coeff_idx] = coeff;
+        coeff_idx++;
+      }
     }
+
+    return res;
   }
 
   // Generate a random degree 511 polynomial.
