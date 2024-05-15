@@ -126,7 +126,7 @@ public:
   inline constexpr const field::zq_t& operator[](const size_t idx) const { return this->coeffs[idx]; }
 
   // Number of coefficients in polynomial.
-  inline constexpr size_t size() const { return N; }
+  inline constexpr size_t num_coeffs() const { return N; }
 
   // Sets all coefficients of the polynomial with same value.
   inline constexpr void fill_with(const field::zq_t v) { std::fill(this->coeffs.begin(), this->coeffs.end(), v); }
@@ -136,7 +136,7 @@ public:
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] + rhs[i];
     }
 
@@ -151,7 +151,7 @@ public:
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       const auto added = (*this)[i].raw() + rhs[i].raw();
       const auto reduced = reduce_once_mod<Q_prime>(added);
 
@@ -166,7 +166,7 @@ public:
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] - rhs[i];
     }
 
@@ -181,7 +181,7 @@ public:
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       const auto neg_rhs = Q_prime - rhs[i].raw();
       const auto subtracted = (*this)[i].raw() + neg_rhs;
       const auto reduced = reduce_once_mod<Q_prime>(subtracted);
@@ -192,23 +192,12 @@ public:
     return res;
   }
 
-  // [Constant-time] Checks for equality of two polynomials.
-  inline constexpr bool operator==(const poly_t& rhs) const
-  {
-    bool res = true;
-    for (size_t i = 0; i < rhs.size(); i++) {
-      res &= (*this)[i] == rhs[i];
-    }
-
-    return res;
-  }
-
   // Multiplies two polynomials, expecting both inputs are in their number theoretic representation.
   inline constexpr poly_t operator*(const poly_t& rhs) const
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] * rhs[i];
     }
 
@@ -222,7 +211,7 @@ public:
     constexpr uint64_t Q_prime = field::Q >> bit_offset;
     constexpr uint64_t rounding = 1ul << (bit_offset - 1);
 
-    for (size_t i = 0; i < this->size(); i++) {
+    for (size_t i = 0; i < this->num_coeffs(); i++) {
       const auto x = this->coeffs[i].raw();
       const auto rounded = x + rounding;
       const auto shifted = rounded >> bit_offset;
@@ -237,8 +226,19 @@ public:
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] << offset;
+    }
+
+    return res;
+  }
+
+  // [Constant-time] Checks for equality of two polynomials.
+  inline constexpr bool operator==(const poly_t& rhs) const
+  {
+    bool res = true;
+    for (size_t i = 0; i < rhs.num_coeffs(); i++) {
+      res &= ((*this)[i] == rhs[i]);
     }
 
     return res;
@@ -293,7 +293,7 @@ public:
       const size_t lenx2 = len << 1;
       const size_t k_beg = N >> (l + 1);
 
-      for (size_t start = 0; start < this->size(); start += lenx2) {
+      for (size_t start = 0; start < this->num_coeffs(); start += lenx2) {
         const size_t k_now = k_beg + (start >> (l + 1));
         const field::zq_t ζ_exp = ζ_EXP[k_now];
 
@@ -318,7 +318,7 @@ public:
       const size_t lenx2 = len << 1;
       const size_t k_beg = (N >> l) - 1;
 
-      for (size_t start = 0; start < this->size(); start += lenx2) {
+      for (size_t start = 0; start < this->num_coeffs(); start += lenx2) {
         const size_t k_now = k_beg - (start >> (l + 1));
         const field::zq_t neg_ζ_exp = ζ_NEG_EXP[k_now];
 
@@ -332,7 +332,7 @@ public:
       }
     }
 
-    for (size_t i = 0; i < this->size(); i++) {
+    for (size_t i = 0; i < this->num_coeffs(); i++) {
       (*this)[i] *= INV_N;
     }
   }
@@ -349,7 +349,7 @@ public:
     xof.absorb(𝜎);
     xof.finalize();
 
-    for (size_t i = 0; i < this->size(); i++) {
+    for (size_t i = 0; i < this->num_coeffs(); i++) {
       uint64_t f_i = 0;
 
       do {
@@ -381,7 +381,7 @@ public:
     constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
 
     size_t coeff_idx = 0;
-    while (coeff_idx < res.size()) {
+    while (coeff_idx < res.num_coeffs()) {
       const uint64_t v = mrng.get(idx);
       const uint64_t coeff = v & mask49;
 
@@ -399,7 +399,7 @@ public:
   {
     poly_t res{};
 
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = field::zq_t::random(prng);
     }
 

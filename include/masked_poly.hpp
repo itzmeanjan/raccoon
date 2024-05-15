@@ -152,6 +152,17 @@ public:
     return res;
   }
 
+  // [Constant-time] Checks for equality of two (un)masked polynomials.
+  inline constexpr bool operator==(const masked_poly_t<d>& rhs) const
+  {
+    bool res = true;
+    for (size_t i = 0; i < rhs.num_shares(); i++) {
+      res &= ((*this)[i] == rhs[i]);
+    }
+
+    return res;
+  }
+
   // Applies Number Theoretic Transform on (un)masked polynomial.
   inline constexpr void ntt()
   {
@@ -189,7 +200,7 @@ public:
   {
     this->fill_with(field::zq_t::zero());
 
-    if constexpr (this->num_shares() > 1) {
+    if constexpr (d > 1) {
       for (size_t sidx = 0; sidx < this->num_shares(); sidx += 2) {
         const auto r = raccoon_poly::poly_t::sample_polynomial(sidx, mrng);
 
