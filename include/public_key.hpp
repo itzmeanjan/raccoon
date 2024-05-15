@@ -26,8 +26,11 @@ public:
   inline constexpr std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed_mut() { return this->seed; }
   inline constexpr const raccoon_poly_vec::poly_vec_t<k, 1>& get_t_mut() const { return this->t; }
 
+  // Returns byte length of the serialized public key.
+  static inline constexpr size_t get_byte_len() { return raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>(); }
+
   // Byte serializes the public key.
-  inline constexpr void to_bytes(std::span<uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>()> bytes) const
+  inline constexpr void to_bytes(std::span<uint8_t, get_byte_len()> bytes) const
   {
     // Serialize `seed`
     std::copy_n(this->seed.begin(), this->seed.size(), bytes.begin());
@@ -74,7 +77,7 @@ public:
   }
 
   // Given a byte serialized public key, this routine helps in deserializing it, producing components (seed, t).
-  static inline constexpr pkey_t from_bytes(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>()> bytes)
+  static inline constexpr pkey_t from_bytes(std::span<const uint8_t, get_byte_len()> bytes)
   {
     pkey_t<𝜅, k, 𝜈t> pkey{};
 
