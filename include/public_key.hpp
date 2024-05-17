@@ -24,8 +24,10 @@ public:
 
   // Accessor(s)
   inline constexpr std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed() const { return this->seed; }
-  inline constexpr std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed_mut() { return this->seed; }
-  inline constexpr const raccoon_poly_vec::poly_vec_t<k, 1>& get_t_mut() const { return this->t; }
+  inline constexpr std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed() { return this->seed; }
+
+  inline constexpr const raccoon_poly_vec::poly_vec_t<k, 1>& get_t() const { return this->t; }
+  inline constexpr raccoon_poly_vec::poly_vec_t<k, 1>& get_t() { return this->t; }
 
   // Returns byte length of the serialized public key.
   static inline constexpr size_t get_byte_len() { return raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>(); }
