@@ -1,30 +1,31 @@
-#include "gadgets.hpp"
-#include "polynomial.hpp"
+#include "poly_vec.hpp"
 #include <gtest/gtest.h>
 
-template<size_t d>
+template<size_t rows, size_t d>
 static void
 test_refresh_and_decoding_gadgets()
   requires(d > 0)
 {
-  constexpr polynomial::polynomial_t zero_poly{};
-  std::array<polynomial::polynomial_t, d> encoded_poly{};
+  const raccoon_poly_vec::poly_vec_t<rows, 1> zero{};
+  raccoon_poly_vec::poly_vec_t<rows, d> v{};
 
-  mrng::mrng_t<d> mrng;
+  mrng::mrng_t<d> mrng{};
 
-  gadgets::zero_encoding<d>(encoded_poly, mrng);
-  EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
+  v.zero_encoding(mrng);
+  EXPECT_EQ(v.decode(), zero);
 
-  gadgets::refresh<d>(encoded_poly, mrng);
-  EXPECT_EQ(gadgets::decode<d>(encoded_poly), zero_poly);
+  v.refresh(mrng);
+  EXPECT_EQ(v.decode(), zero);
 }
 
 TEST(RaccoonSign, RefreshAndDecodingGadgets)
 {
-  test_refresh_and_decoding_gadgets<1>();
-  test_refresh_and_decoding_gadgets<2>();
-  test_refresh_and_decoding_gadgets<4>();
-  test_refresh_and_decoding_gadgets<8>();
-  test_refresh_and_decoding_gadgets<16>();
-  test_refresh_and_decoding_gadgets<32>();
+  constexpr size_t rows = 7;
+
+  test_refresh_and_decoding_gadgets<rows, 1>();
+  test_refresh_and_decoding_gadgets<rows, 2>();
+  test_refresh_and_decoding_gadgets<rows, 4>();
+  test_refresh_and_decoding_gadgets<rows, 8>();
+  test_refresh_and_decoding_gadgets<rows, 16>();
+  test_refresh_and_decoding_gadgets<rows, 32>();
 }
