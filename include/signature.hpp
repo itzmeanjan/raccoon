@@ -2,13 +2,14 @@
 #include "field.hpp"
 #include "poly.hpp"
 #include "poly_vec.hpp"
+#include "serialization.hpp"
 #include <algorithm>
 #include <cstdint>
 
 namespace raccoon_sig {
 
-// Raccoon Signature
-template<size_t 𝜅, size_t k, size_t l, size_t 𝜈w>
+// Raccoon Signature, with fixed byte length
+template<size_t 𝜅, size_t k, size_t l, size_t 𝜈w, size_t sig_byte_len>
 struct sig_t
 {
 private:
@@ -75,6 +76,9 @@ public:
     return z;
   }
 
+  // Returns byte length of the serialized signature.
+  static inline constexpr size_t get_byte_len() { return sig_byte_len; }
+
   // Performs norm bounds check on hint vector `h` and response vector `z`, following section 2.4.4 (and algorithm 4) of the Raccoon specification.
   // If signature passes norms check, returns true, else return false.
   //
@@ -139,6 +143,21 @@ public:
     }
 
     return true;
+  }
+
+  // Byte serializes the signature, returning true in case of successful serialization, else returns false.
+  inline constexpr bool to_bytes(std::span<uint8_t, sig_byte_len> bytes) const
+  {
+    return raccoon_serialization::encode_sig<𝜅, k, l>(this->c_hash, this->h, this->z, bytes);
+  }
+
+  // Given a byte serialized signature, returning true in case of successful decoding, else returns false.
+  static inline constexpr std::pair<sig_t, bool> from_bytes(std::span<const uint8_t, sig_byte_len> bytes)
+  {
+    sig_t sig{};
+    const auto ret = raccoon_serialization::decode_sig<𝜅, k, l>(bytes, sig.c_hash, sig.h, sig.z);
+
+    return { sig, ret };
   }
 };
 

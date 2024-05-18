@@ -212,7 +212,7 @@ mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * raccoon_poly::N *
 //
 // In case signature can *not* be encoded into fixed byte length `sig_byte_len`, it returns false, otherwise
 // (i.e. in case of successful signature encoding ) it returns true.
-template<size_t k, size_t l, size_t 𝜅, size_t sig_byte_len>
+template<size_t 𝜅, size_t k, size_t l, size_t sig_byte_len>
 static inline constexpr bool
 encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
            std::span<const int64_t, k * raccoon_poly::N> h,
@@ -423,7 +423,7 @@ decode_bits_as_response_coeff(const uint64_t buffer, const size_t buf_bit_off, c
 // Decodes a byte encoded signature as (c_hash, h, z), following section 2.5.1 of the Raccoon specification.
 //
 // In case signature decoding fails, it returns false, else it returns true.
-template<size_t k, size_t l, size_t 𝜅, size_t sig_byte_len>
+template<size_t 𝜅, size_t k, size_t l, size_t sig_byte_len>
 static inline constexpr bool
 decode_sig(std::span<const uint8_t, sig_byte_len> sig,
            std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
