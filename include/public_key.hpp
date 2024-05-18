@@ -55,7 +55,7 @@ public:
   static inline constexpr pkey_t from_bytes(std::span<const uint8_t, get_byte_len()> bytes)
   {
     pkey_t<𝜅, k, 𝜈t> pkey{};
-    raccoon_serialization::decode_public_key<𝜅, k, 𝜈t>(bytes, pkey.get_seed_mut(), pkey.get_t_mut());
+    raccoon_serialization::decode_public_key<𝜅, k, 𝜈t>(bytes, pkey.get_seed(), pkey.get_t());
     return pkey;
   }
 };
