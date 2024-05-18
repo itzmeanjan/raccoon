@@ -244,18 +244,18 @@ public:
     return res;
   }
 
-  // Centers the coefficients of a polynomial around 0, given that they ∈ [0, q] and resulting polynomial coeffiecients will be signed s.t. ∈ [-q/2, q/2).
-  // Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/polyr.py#L215-L218
-  template<uint64_t q>
+  // Centers the coefficients of a polynomial around 0, given that they ∈ [0, Q_prime] and resulting polynomial coeffiecients will be signed s.t. ∈ [-Q_prime/2,
+  // Q_prime/2). Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/polyr.py#L215-L218
+  template<uint64_t Q_prime>
   inline constexpr std::array<int64_t, N> center() const
   {
-    constexpr auto qby2 = q / 2;
+    constexpr auto Q_prime_by_2 = Q_prime / 2;
     std::array<int64_t, N> centered_poly{};
 
     for (size_t i = 0; i < centered_poly.size(); i++) {
       const auto x = this->coeffs[i].raw();
-      const auto is_ge = subtle::ct_ge<uint64_t, uint64_t>(x + qby2, q);
-      const auto centered_x = static_cast<int64_t>(x) - static_cast<int64_t>(is_ge & q);
+      const auto is_ge = subtle::ct_ge<uint64_t, uint64_t>(x + Q_prime_by_2, Q_prime);
+      const auto centered_x = static_cast<int64_t>(x) - static_cast<int64_t>(is_ge & Q_prime);
 
       centered_poly[i] = centered_x;
     }
@@ -263,8 +263,9 @@ public:
     return centered_poly;
   }
 
-  // Extends the coefficients of a polynomial in [0, q), given that input coefficients are currently centered around 0 i.e. they ∈ [-q/2, q/2).
-  template<uint64_t q>
+  // Extends the coefficients of a polynomial in [0, Q_prime), given that input coefficients are currently centered around 0
+  // i.e. they ∈ [-Q_prime/2, Q_prime/2).
+  template<uint64_t Q_prime>
   static inline constexpr poly_t from_centered(std::span<const int64_t, N> centered)
   {
     poly_t extended{};
@@ -273,8 +274,8 @@ public:
       const auto x = centered[i];
 
       const auto mask = static_cast<uint64_t>(x >> 63);
-      const auto q_masked = static_cast<int64_t>(q & mask);
-      const auto extended_x = static_cast<uint64_t>(x + q_masked);
+      const auto q_prime_masked = static_cast<int64_t>(Q_prime & mask);
+      const auto extended_x = static_cast<uint64_t>(x + q_prime_masked);
 
       extended[i] = extended_x;
     }
