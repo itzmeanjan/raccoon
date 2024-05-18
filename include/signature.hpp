@@ -74,6 +74,72 @@ public:
 
     return z;
   }
+
+  // Performs norm bounds check on hint vector `h` and response vector `z`, following section 2.4.4 (and algorithm 4) of the Raccoon specification.
+  // If signature passes norms check, returns true, else return false.
+  //
+  // Though note, it doesn't implement step 1, 2 of algorithm 4; implementation begins from step 3.
+  // Following implementation collects some inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/racc_core.py#L257-L299
+  template<uint64_t Binf, uint64_t B22>
+  inline constexpr bool check_bounds()
+  {
+    uint64_t h_inf_norm = 0;
+    uint64_t h_sqr_norm = 0;
+
+    size_t h_idx = 0;
+    while (h_idx < this->h.size()) {
+      const auto x = this->h[h_idx];
+      const auto abs_x = static_cast<uint64_t>(std::abs(x));
+
+      h_inf_norm = std::max(h_inf_norm, abs_x);
+      h_sqr_norm += (abs_x * abs_x);
+
+      h_idx++;
+    }
+
+    constexpr field::zq_t Qby2 = field::Q / 2;
+
+    field::zq_t z_inf_norm = 0;
+    field::zq_t z_sqr_norm = 0;
+
+    // Lambda for converting a value x ∈ [-Q/2, Q/2), to [0, Q)
+    const auto from_centered_to_Zq = [](const int64_t x) -> field::zq_t {
+      const auto mask = static_cast<uint64_t>(x >> 63);
+      const auto q_prime_masked = static_cast<int64_t>(field::Q & mask);
+      const auto extended_x = static_cast<uint64_t>(x + q_prime_masked);
+
+      return extended_x;
+    };
+
+    size_t z_idx = 0;
+    while (z_idx < this->z.size()) {
+      const auto x = from_centered_to_Zq(this->z[z_idx]);
+
+      const auto abs_x = (x > Qby2) ? -x : x;
+      z_inf_norm = std::max(z_inf_norm, abs_x);
+
+      const auto abs_x_shft = abs_x >> 32;
+      z_sqr_norm += (abs_x_shft * abs_x_shft);
+
+      z_idx++;
+    }
+
+    if (h_inf_norm > (Binf >> 𝜈w)) {
+      return false;
+    }
+    if (z_inf_norm > field::zq_t(Binf)) {
+      return false;
+    }
+
+    static_assert((2 * 𝜈w) >= 64, "𝜈w must be >= 32");
+    const auto scaled_h_sqr_norm = h_sqr_norm * (1ul << ((2 * 𝜈w) - 64));
+
+    if ((field::zq_t(scaled_h_sqr_norm) + z_sqr_norm) > field::zq_t(B22)) {
+      return false;
+    }
+
+    return true;
+  }
 };
 
 }
