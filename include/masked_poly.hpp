@@ -146,7 +146,7 @@ public:
     masked_poly_t res{};
 
     for (size_t sidx = 0; sidx < this->num_shares(); sidx++) {
-      (*this)[sidx] = (*this)[sidx] << offset;
+      res[sidx] = (*this)[sidx] << offset;
     }
 
     return res;
