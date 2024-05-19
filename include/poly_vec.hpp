@@ -32,6 +32,18 @@ public:
     }
   }
 
+  // Shift polynomial vector leftwards by `offset` (<64) many bits.
+  inline constexpr poly_vec_t operator<<(const size_t offset) const
+  {
+    poly_vec_t res{};
+
+    for (size_t ridx = 0; ridx < this->num_rows(); ridx++) {
+      res[ridx] = (*this)[ridx] << offset;
+    }
+
+    return res;
+  }
+
   // [Constant-time] Checks for equality of two (un)masked polynomial vectors.
   inline constexpr bool operator==(const poly_vec_t<rows, d>& rhs) const
   {
