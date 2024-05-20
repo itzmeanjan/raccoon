@@ -106,18 +106,17 @@ public:
 
     // Step 2: Bind public key with message
     std::array<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> 𝜇{};
-    auto 𝜇_span = std::span(𝜇);
 
     shake256::shake256_t hasher{};
     hasher.absorb(pk_bytes);
     hasher.finalize();
-    hasher.squeeze(𝜇_span);
+    hasher.squeeze(𝜇);
     hasher.reset();
 
-    hasher.absorb(𝜇_span);
+    hasher.absorb(𝜇);
     hasher.absorb(msg);
     hasher.finalize();
-    hasher.squeeze(𝜇_span);
+    hasher.squeeze(𝜇);
 
     // Step 3: Generate matrix A
     const auto A = raccoon_poly_mat::poly_mat_t<k, l>::template expandA<k, l, 𝜅>(this->pkey.get_seed());
@@ -172,13 +171,13 @@ public:
       auto z_prime = z.decode();
 
       // Step 17: Compute noisy LWE commitment vector y
-      auto y = (A * z_prime) - (t * c_poly);
+      auto y = A * z_prime - t * c_poly;
+      y.intt();
+      z_prime.intt();
 
       // Step 18: Computes hint vector h, subtraction modulo `q >> 𝜈w`
       y.template rounding_shr<𝜈w>();
       auto h = w_prime.template sub_mod<(field::Q >> 𝜈w)>(y);
-
-      z_prime.intt();
 
       // Step 19: Convert signature components into serialization friendly format
       sig = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>(c_hash, h, z_prime);
