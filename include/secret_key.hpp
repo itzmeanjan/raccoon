@@ -7,6 +7,7 @@
 #include "prng.hpp"
 #include "public_key.hpp"
 #include "signature.hpp"
+#include "utils.hpp"
 
 namespace raccoon_skey {
 
@@ -100,7 +101,7 @@ public:
     t = t << 𝜈t;
     t.ntt();
 
-    std::array<uint8_t, this->pkey.get_byte_len()> pk_bytes{};
+    std::array<uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>()> pk_bytes{};
     this->pkey.to_bytes(pk_bytes);
 
     // Step 2: Bind public key with message
