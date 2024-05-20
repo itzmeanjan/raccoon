@@ -35,6 +35,18 @@ public:
     return res;
   }
 
+  // Subtraction of one (un)masked polynomial vector from another one.
+  inline constexpr poly_vec_t operator-(const poly_vec_t& rhs) const
+  {
+    poly_vec_t res{};
+
+    for (size_t ridx = 0; ridx < res.num_rows(); ridx++) {
+      res[ridx] = (*this)[ridx] - rhs[ridx];
+    }
+
+    return res;
+  }
+
   // Subtracts one (un)masked polynomial vector from another one s.t. each of the coefficients ∈ [0, Q_prime) and resulting (un)masked polynomial vector's
   // coefficients are reduced modulo `Q_prime`.
   template<uint64_t Q_prime>
