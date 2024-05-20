@@ -26,7 +26,7 @@ chal_hash(const raccoon_poly_vec::poly_vec_t<k, 1>& w,
   std::copy(hdr.begin(), hdr.end(), _buffer.begin());
   buf_off += hdr.size();
 
-  constexpr size_t coeff_cnt = w.num_rows() * raccoon_poly::N;
+  constexpr size_t coeff_cnt = k * raccoon_poly::N;
   size_t w_idx = 0;
 
   while (w_idx < coeff_cnt) {
