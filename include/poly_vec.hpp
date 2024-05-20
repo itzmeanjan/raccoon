@@ -35,6 +35,20 @@ public:
     return res;
   }
 
+  // Subtracts one (un)masked polynomial vector from another one s.t. each of the coefficients ∈ [0, Q_prime) and resulting (un)masked polynomial vector's
+  // coefficients are reduced modulo `Q_prime`.
+  template<uint64_t Q_prime>
+  inline constexpr poly_vec_t sub_mod(const poly_vec_t& rhs) const
+  {
+    poly_vec_t res{};
+
+    for (size_t ridx = 0; ridx < res.num_rows(); ridx++) {
+      res[ridx] = (*this)[ridx].template sub_mod<Q_prime>(rhs[ridx]);
+    }
+
+    return res;
+  }
+
   // Multiplication by a polynomial s.t. both polynomial vector (LHS input) and polynomial (RHS input) are in their NTT representation.
   inline constexpr poly_vec_t operator*(const raccoon_poly::poly_t& rhs) const
   {
