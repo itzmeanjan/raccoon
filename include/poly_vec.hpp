@@ -143,7 +143,7 @@ public:
   inline constexpr void refresh(mrng::mrng_t<d>& mrng)
   {
     for (size_t ridx = 0; ridx < this->num_rows(); ridx++) {
-      (*this)[ridx].zero_encoding(mrng);
+      (*this)[ridx].refresh(mrng);
     }
   }
 
