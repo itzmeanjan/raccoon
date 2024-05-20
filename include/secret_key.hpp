@@ -82,7 +82,7 @@ public:
     // Step 8: Rounding and right shifting of unmasked vector t
     t_prime.template rounding_shr<𝜈t>();
 
-    const auto vk = raccoon_pkey::pkey_t<𝜅, k, 𝜈t>(seed, t);
+    const auto vk = raccoon_pkey::pkey_t<𝜅, k, 𝜈t>(seed, t_prime);
     const auto sk = raccoon_skey::skey_t<𝜅, k, l, d, 𝜈t>(vk, s);
 
     return sk;
