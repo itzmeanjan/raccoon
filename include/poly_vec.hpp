@@ -1,5 +1,6 @@
 #pragma once
 #include "masked_poly.hpp"
+#include "poly.hpp"
 
 namespace raccoon_poly_vec {
 
@@ -21,6 +22,32 @@ public:
 
   // Number of rows in the column vector.
   inline constexpr size_t num_rows() const { return rows; }
+
+  // Addition of two (un)masked polynomial vectors.
+  inline constexpr poly_vec_t operator+(const poly_vec_t& rhs) const
+  {
+    poly_vec_t res{};
+
+    for (size_t ridx = 0; ridx < this->num_rows(); ridx++) {
+      res[ridx] = (*this)[ridx] + rhs[ridx];
+    }
+
+    return res;
+  }
+
+  // Multiplication by a polynomial s.t. both polynomial vector (LHS input) and polynomial (RHS input) are in their NTT representation.
+  inline constexpr poly_vec_t operator*(const raccoon_poly::poly_t& rhs) const
+  {
+    poly_vec_t res{};
+
+    for (size_t ridx = 0; ridx < this->num_rows(); ridx++) {
+      for (size_t sidx = 0; sidx < d; sidx++) {
+        res[ridx][sidx] = (*this)[ridx][sidx] * rhs;
+      }
+    }
+
+    return res;
+  }
 
   // Rounding and right shift of each polynomial, while finally reducing by moduli `Q_prime = floor(Q / 2^bit_offset)`.
   template<size_t bit_offset>
