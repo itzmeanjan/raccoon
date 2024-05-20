@@ -395,6 +395,42 @@ public:
     return res;
   }
 
+  // Expands a `2 * 𝜅` -bit challenge hash into a polynomial such that exactly `𝜔` -many of coefficients are set to +1/ -1,
+  // while others are set to 0, following algorithm 10 of the Raccoon specification.
+  template<size_t 𝜅, size_t 𝜔>
+  static inline constexpr poly_t chal_poly(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)
+  {
+    poly_t c_poly{};
+    shake256::shake256_t xof;
+
+    std::array<uint8_t, sizeof(uint64_t)> hdr{};
+    hdr[0] = 'c';
+    hdr[1] = 𝜔;
+
+    xof.absorb(hdr);
+    xof.absorb(c_hash);
+    xof.finalize();
+
+    constexpr uint16_t mask = (1u << LOG2N) - 1;
+    size_t non_zero_coeff_cnt = 0;
+
+    while (non_zero_coeff_cnt < 𝜔) {
+      std::array<uint8_t, sizeof(uint16_t)> b{};
+      xof.squeeze(b);
+
+      const auto b_word = raccoon_utils::from_le_bytes<uint16_t>(b);
+      const auto b_0 = b_word & 0b1u;
+      const auto i = static_cast<uint16_t>(b_word >> 1u) & mask;
+
+      if (c_poly[i] == 0) {
+        c_poly[i] = field::zq_t::one() - field::zq_t(2 * b_0);
+        non_zero_coeff_cnt += 1;
+      }
+    }
+
+    return c_poly;
+  }
+
   // Generate a random degree 511 polynomial.
   static inline constexpr poly_t random(prng::prng_t& prng)
   {
