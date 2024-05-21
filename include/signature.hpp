@@ -5,6 +5,7 @@
 #include "serialization.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 
 namespace raccoon_sig {
 
@@ -151,13 +152,17 @@ public:
     return raccoon_serialization::encode_sig<𝜅, k, l>(this->c_hash, this->h, this->z, bytes);
   }
 
-  // Given a byte serialized signature, returning true in case of successful decoding, else returns false.
-  static inline constexpr std::pair<sig_t, bool> from_bytes(std::span<const uint8_t, sig_byte_len> bytes)
+  // Given a byte serialized signature, returns a valid signature object if it can be successfully decoded, else returns empty std::optional.
+  static inline constexpr std::optional<sig_t> from_bytes(std::span<const uint8_t, sig_byte_len> bytes)
   {
     sig_t sig{};
-    const auto ret = raccoon_serialization::decode_sig<𝜅, k, l>(bytes, sig.c_hash, sig.h, sig.z);
 
-    return { sig, ret };
+    const auto ret = raccoon_serialization::decode_sig<𝜅, k, l>(bytes, sig.c_hash, sig.h, sig.z);
+    if (ret) {
+      return sig;
+    } else {
+      return std::nullopt;
+    }
   }
 };
 
