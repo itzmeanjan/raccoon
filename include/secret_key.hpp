@@ -88,7 +88,7 @@ public:
     return sk;
   }
 
-  // Given one (un)masked Raccoon secret key, this routine can be used for signing a message of arbitrary length, following algorithm 2 of the specification.
+  // This routine can be used for signing a message of arbitrary length, following algorithm 2 of the specification.
   //
   // When `d = 1`, it's the unmasked case, while for `d > 1`, signing process is masked.
   template<size_t 𝑢w, size_t 𝜈w, size_t rep, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
@@ -111,6 +111,7 @@ public:
     hasher.absorb(pk_bytes);
     hasher.finalize();
     hasher.squeeze(𝜇);
+
     hasher.reset();
 
     hasher.absorb(𝜇);
