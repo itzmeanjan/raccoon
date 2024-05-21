@@ -95,12 +95,15 @@ test_encode_decode_signature_all_zeros()
   const auto orig_sig = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>(orig_c_hash, orig_h, orig_z);
   const bool is_encoded = orig_sig.to_bytes(sig_bytes);
 
-  raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len> decoded_sig{};
-  bool is_decoded = false;
-  std::tie(decoded_sig, is_decoded) = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>::from_bytes(sig_bytes);
+  const auto decoded_sig_opt = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>::from_bytes(sig_bytes);
+
+  // ensure that signature got successfully decoded
+  const bool is_decoded = decoded_sig_opt.has_value();
+  EXPECT_TRUE(is_decoded);
+
+  const auto decoded_sig = decoded_sig_opt.value();
 
   EXPECT_TRUE(is_encoded);
-  EXPECT_TRUE(is_decoded);
   EXPECT_TRUE(std::equal(orig_c_hash.begin(), orig_c_hash.end(), decoded_sig.get_c_hash().begin()));
   EXPECT_EQ(orig_h, decoded_sig.get_h());
   EXPECT_EQ(orig_z, decoded_sig.get_z());
