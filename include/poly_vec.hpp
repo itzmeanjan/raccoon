@@ -35,6 +35,20 @@ public:
     return res;
   }
 
+  // Performs addition of two (un)masked polynomial vectors, reducing each cofficients by a small moduli `Q_prime`, assuming coefficients of input (un)masked
+  // polynomial vectors also ∈ [0, Q_prime).
+  template<uint64_t Q_prime>
+  inline constexpr poly_vec_t add_mod(const poly_vec_t& rhs) const
+  {
+    poly_vec_t res{};
+
+    for (size_t ridx = 0; ridx < res.num_rows(); ridx++) {
+      res[ridx] = (*this)[ridx].template add_mod<Q_prime>(rhs[ridx]);
+    }
+
+    return res;
+  }
+
   // Subtraction of one (un)masked polynomial vector from another one.
   inline constexpr poly_vec_t operator-(const poly_vec_t& rhs) const
   {
