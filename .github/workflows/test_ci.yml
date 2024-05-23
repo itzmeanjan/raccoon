@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set machine stack size
-      run: ulimit -s 65536 # 64kB
+      run: sudo ulimit -s 65536 # 64kB
     - name: Setup Google-Test
       run: |
         pushd ~
