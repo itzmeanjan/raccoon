@@ -49,6 +49,13 @@ public:
     return res;
   }
 
+  // Refresh the shares of masked secret key polynomial vector `[[s]]`
+  inline constexpr void refresh()
+  {
+    mrng::mrng_t<d> mrng{};
+    this->s.refresh(mrng);
+  }
+
   // Given `𝜅/ 8` -bytes seed as input, this routine can be used for (un)masked Raccoon key generation, following algorithm 1 of the specification.
   //
   // When `d = 1`, it's the unmasked case, while for `d > 1`, key generation process is masked.
