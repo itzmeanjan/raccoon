@@ -3,8 +3,8 @@ CXX_FLAGS = -std=c++20
 WARN_FLAGS = -Wall -Wextra -pedantic
 OPT_FLAGS = -O3 -march=native
 LINK_FLAGS = -flto
-ASAN_FLAGS = -g3 -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address # From https://clang.llvm.org/docs/AddressSanitizer.html
-UBSAN_FLAGS = -g3 -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=undefined # From https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+ASAN_FLAGS = -g -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address # From https://clang.llvm.org/docs/AddressSanitizer.html
+UBSAN_FLAGS = -g -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=undefined # From https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 
 I_FLAGS = -I ./include
 SHA3_INC_DIR = ./sha3/include
@@ -13,7 +13,7 @@ SUBTLE_INC_DIR = ./subtle/include
 DEP_IFLAGS = -I $(SHA3_INC_DIR) -I $(ASCON_INC_DIR) -I $(SUBTLE_INC_DIR)
 
 SRC_DIR = include
-RACCOON_SOURCES := $(wildcard $(SRC_DIR)/*.hpp)
+RACCOON_SOURCES := $(shell find $(SRC_DIR) -name '*.hpp')
 BUILD_DIR = build
 ASAN_BUILD_DIR = $(BUILD_DIR)/asan
 UBSAN_BUILD_DIR = $(BUILD_DIR)/ubsan

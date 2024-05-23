@@ -1,5 +1,5 @@
-#include "public_key.hpp"
-#include "secret_key.hpp"
+#include "raccoon/public_key.hpp"
+#include "raccoon/secret_key.hpp"
 #include <gtest/gtest.h>
 
 // Test key generation -> signing -> verification flow for random message of given byte length.

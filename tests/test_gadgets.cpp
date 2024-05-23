@@ -1,4 +1,4 @@
-#include "poly_vec.hpp"
+#include "raccoon/internals/poly_vec.hpp"
 #include <gtest/gtest.h>
 
 template<size_t rows, size_t d>

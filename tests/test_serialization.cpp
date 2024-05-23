@@ -1,6 +1,6 @@
-#include "field.hpp"
-#include "serialization.hpp"
-#include "signature.hpp"
+#include "raccoon/internals/field.hpp"
+#include "raccoon/internals/serialization.hpp"
+#include "raccoon/signature.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
 
