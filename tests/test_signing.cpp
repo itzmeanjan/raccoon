@@ -56,7 +56,8 @@ test_signing(const size_t till_mlen)
     // Sample random message
     prng.read(msg_span);
 
-    // Sign random message using secret key and serialize signature
+    // Refresh secret key, sign a random message using refreshed secret key and finally serialize signature
+    decoded_skey.refresh();
     auto sig = decoded_skey.template sign<𝑢w, 𝜈w, rep, 𝜔, sig_byte_len, Binf, B22>(msg_span);
     sig.to_bytes(sig_bytes_span);
 
