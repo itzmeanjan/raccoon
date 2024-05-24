@@ -1,6 +1,6 @@
 #pragma once
-#include "public_key.hpp"
-#include "secret_key.hpp"
+#include "internals/public_key.hpp"
+#include "internals/secret_key.hpp"
 
 // Raccoon-128 Signing Algorithm.
 namespace raccoon128 {

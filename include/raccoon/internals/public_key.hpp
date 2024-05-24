@@ -1,12 +1,12 @@
 #pragma once
-#include "internals/challenge.hpp"
-#include "internals/field.hpp"
-#include "internals/poly_mat.hpp"
-#include "internals/poly_vec.hpp"
-#include "internals/serialization.hpp"
-#include "internals/utils.hpp"
+#include "challenge.hpp"
+#include "field.hpp"
+#include "poly_mat.hpp"
+#include "poly_vec.hpp"
+#include "serialization.hpp"
 #include "shake256.hpp"
 #include "signature.hpp"
+#include "utils.hpp"
 #include <array>
 #include <cstdint>
 

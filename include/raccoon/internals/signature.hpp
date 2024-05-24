@@ -1,8 +1,8 @@
 #pragma once
-#include "internals/field.hpp"
-#include "internals/poly.hpp"
-#include "internals/poly_vec.hpp"
-#include "internals/serialization.hpp"
+#include "field.hpp"
+#include "poly.hpp"
+#include "poly_vec.hpp"
+#include "serialization.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <optional>
