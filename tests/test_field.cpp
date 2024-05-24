@@ -1,4 +1,4 @@
-#include "field.hpp"
+#include "raccoon/internals/field.hpp"
 #include <gtest/gtest.h>
 
 TEST(RaccoonSign, ArithmeticOverZq)
