@@ -49,6 +49,15 @@ is_power_of_2(const T v)
   return ((v) & (v - 1)) == 0;
 }
 
+// Given a power of 2 value `v`, this routine returns logarithm base-2 of v.
+template<size_t v>
+static inline constexpr size_t
+log2()
+  requires((v > 0) && is_power_of_2<decltype(v)>(v))
+{
+  return std::countr_zero(v);
+}
+
 // Compile-time compute Raccoon public key byte length.
 template<size_t 𝜅, size_t k, size_t n, size_t 𝜈t>
 static inline constexpr size_t
