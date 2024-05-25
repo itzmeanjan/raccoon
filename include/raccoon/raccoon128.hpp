@@ -88,6 +88,9 @@ public:
     auto sig = this->sk.template sign<𝑢w[raccoon_utils::log2<d>()], 𝜈w, rep[raccoon_utils::log2<d>()], 𝜔, sig_bytes.size(), Binf, B22>(msg);
     (void)sig.to_bytes(sig_bytes);
   }
+
+  // Refresh the shares of masked secret key polynomial vector `[[s]]`
+  inline constexpr void refresh() { this->sk.refresh(); }
 };
 
 }
