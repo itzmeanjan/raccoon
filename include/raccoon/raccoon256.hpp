@@ -52,7 +52,7 @@ public:
   }
 };
 
-// Raccoon-256 Secret Key with masking order (d-1).
+// Raccoon-256 Secret Key with masking order (d-1) s.t. 0 < d <= 32.
 template<size_t d>
 struct raccoon256_skey_t
 {
