@@ -1,13 +1,13 @@
 #pragma once
-#include "internals/challenge.hpp"
-#include "internals/mrng.hpp"
-#include "internals/params.hpp"
-#include "internals/poly.hpp"
-#include "internals/poly_mat.hpp"
-#include "internals/prng.hpp"
-#include "internals/utils.hpp"
+#include "challenge.hpp"
+#include "mrng.hpp"
+#include "params.hpp"
+#include "poly.hpp"
+#include "poly_mat.hpp"
+#include "prng.hpp"
 #include "public_key.hpp"
 #include "signature.hpp"
+#include "utils.hpp"
 
 namespace raccoon_skey {
 

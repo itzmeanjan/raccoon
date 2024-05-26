@@ -1,12 +1,12 @@
 #pragma once
-#include "internals/challenge.hpp"
-#include "internals/field.hpp"
-#include "internals/poly_mat.hpp"
-#include "internals/poly_vec.hpp"
-#include "internals/serialization.hpp"
-#include "internals/utils.hpp"
+#include "challenge.hpp"
+#include "field.hpp"
+#include "poly_mat.hpp"
+#include "poly_vec.hpp"
+#include "serialization.hpp"
 #include "shake256.hpp"
 #include "signature.hpp"
+#include "utils.hpp"
 #include <array>
 #include <cstdint>
 
@@ -56,7 +56,7 @@ public:
   // this routine verifies the validity of the signature, returning boolean truth value in case of success, else returning false. This is an implementation of
   // the algorithm 3 of the specification.
   template<size_t l, size_t 𝜈w, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
-  inline constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, sig_byte_len> sig)
+  inline constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, sig_byte_len> sig) const
   {
     // Step 1: Attempt to decode signature into its components
     auto sig_opt = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>::from_bytes(sig);
