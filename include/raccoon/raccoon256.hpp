@@ -1,6 +1,7 @@
 #pragma once
 #include "internals/public_key.hpp"
 #include "internals/secret_key.hpp"
+#include "raccoon/internals/prng.hpp"
 
 // Raccoon-256 Signing Algorithm.
 namespace raccoon256 {
@@ -68,7 +69,11 @@ public:
   explicit inline constexpr raccoon256_skey_t(std::span<const uint8_t, sk256_t::get_byte_len()> sk_bytes) { this->sk = sk256_t::from_bytes(sk_bytes); }
 
   // Given a Raccoon-256 secret key object, serializes it as a byte array.
-  inline constexpr void as_bytes(std::span<uint8_t, sk256_t::get_byte_len()> sk_bytes) const { this->sk.to_bytes(sk_bytes, {}); }
+  inline constexpr void as_bytes(std::span<uint8_t, sk256_t::get_byte_len()> sk_bytes) const
+  {
+    prng::prng_t prng;
+    this->sk.to_bytes(sk_bytes, prng);
+  }
 
   // Raccoon-256 secret key byte length.
   inline constexpr size_t get_byte_len() const { return sk256_t::get_byte_len(); }
