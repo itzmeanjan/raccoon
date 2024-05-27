@@ -44,7 +44,7 @@ public:
   inline constexpr void as_bytes(std::span<uint8_t, PKEY_BYTE_LEN> pk_bytes) const { this->pk.to_bytes(pk_bytes); }
 
   // Raccoon-256 public key byte length.
-  inline constexpr size_t get_byte_len() const { return PKEY_BYTE_LEN; }
+  static inline constexpr size_t get_byte_len() { return PKEY_BYTE_LEN; }
 
   // Given a (message, signature) pair as byte arrays, verifies the validity of signature, returning boolean truth value in case of success.
   inline constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, SIG_BYTE_LEN> sig_bytes) const
@@ -76,7 +76,7 @@ public:
   }
 
   // Raccoon-256 secret key byte length.
-  inline constexpr size_t get_byte_len() const { return sk256_t::get_byte_len(); }
+  static inline constexpr size_t get_byte_len() { return sk256_t::get_byte_len(); }
 
   // Generates a new Raccoon-256 keypair, given a 16 -bytes seed.
   static inline constexpr raccoon256_skey_t generate(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed)
