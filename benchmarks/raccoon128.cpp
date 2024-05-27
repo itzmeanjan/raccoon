@@ -26,3 +26,14 @@ bench_raccoon128_keygen(benchmark::State& state)
 }
 
 BENCHMARK(bench_raccoon128_keygen<1>)->Name("raccoon128/keygen/unmasked")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon128_keygen<2>)->Name("raccoon128/keygen/masked(order 1)")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon128_keygen<4>)->Name("raccoon128/keygen/masked(order 3)")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon128_keygen<8>)->Name("raccoon128/keygen/masked(order 7)")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon128_keygen<16>)
+  ->Name("raccoon128/keygen/masked(order 15)")
+  ->ComputeStatistics("min", compute_min)
+  ->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon128_keygen<32>)
+  ->Name("raccoon128/keygen/masked(order 31)")
+  ->ComputeStatistics("min", compute_min)
+  ->ComputeStatistics("max", compute_max);
