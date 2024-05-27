@@ -29,6 +29,15 @@ ASAN_TEST_BINARY = $(ASAN_BUILD_DIR)/test.out
 UBSAN_TEST_BINARY = $(UBSAN_BUILD_DIR)/test.out
 GTEST_PARALLEL = ./gtest-parallel/gtest-parallel
 
+BENCHMARK_DIR = benchmarks
+BENCHMARK_SOURCES := $(wildcard $(BENCHMARK_DIR)/*.cpp)
+BENCHMARK_HEADERS := $(wildcard $(BENCHMARK_DIR)/*.hpp)
+BENCHMARK_OBJECTS := $(addprefix $(BUILD_DIR)/, $(notdir $(patsubst %.cpp,%.o,$(BENCHMARK_SOURCES))))
+BENCHMARK_LINK_FLAGS = -lbenchmark -lbenchmark_main -lpthread
+BENCHMARK_BINARY = $(BUILD_DIR)/bench.out
+PERF_LINK_FLAGS = -lbenchmark -lbenchmark_main -lpfm -lpthread
+PERF_BINARY = $(BUILD_DIR)/perf.out
+
 all: test
 
 $(ASAN_BUILD_DIR):
@@ -79,10 +88,27 @@ asan_test: $(ASAN_TEST_BINARY) $(GTEST_PARALLEL)
 ubsan_test: $(UBSAN_TEST_BINARY) $(GTEST_PARALLEL)
 	$(GTEST_PARALLEL) $< --print_test_times
 
+$(BUILD_DIR)/%.o: $(BENCHMARK_DIR)/%.cpp $(BUILD_DIR) $(SHA3_INC_DIR) $(ASCON_INC_DIR) $(SUBTLE_INC_DIR)
+	$(CXX) $(CXX_FLAGS) $(WARN_FLAGS) $(OPT_FLAGS) $(I_FLAGS) $(DEP_IFLAGS) -c $< -o $@
+
+$(BENCHMARK_BINARY): $(BENCHMARK_OBJECTS)
+	$(CXX) $(OPT_FLAGS) $(LINK_FLAGS) $^ $(BENCHMARK_LINK_FLAGS) -o $@
+
+benchmark: $(BENCHMARK_BINARY)
+	# Must *not* build google-benchmark with libPFM
+	./$< --benchmark_time_unit=us --benchmark_min_warmup_time=.5 --benchmark_enable_random_interleaving=true --benchmark_repetitions=16 --benchmark_min_time=0.1s --benchmark_display_aggregates_only=true --benchmark_counters_tabular=true
+
+$(PERF_BINARY): $(BENCHMARK_OBJECTS)
+	$(CXX) $(OPT_FLAGS) $(LINK_FLAGS) $^ $(PERF_LINK_FLAGS) -o $@
+
+perf: $(PERF_BINARY)
+	# Must build google-benchmark with libPFM, follow https://gist.github.com/itzmeanjan/05dc3e946f635d00c5e0b21aae6203a7
+	./$< --benchmark_time_unit=us --benchmark_min_warmup_time=.5 --benchmark_enable_random_interleaving=true --benchmark_repetitions=16 --benchmark_min_time=0.1s --benchmark_display_aggregates_only=true --benchmark_counters_tabular=true --benchmark_perf_counters=CYCLES
+
 .PHONY: format clean
 
 clean:
 	rm -rf $(BUILD_DIR)
 
-format: $(RACCOON_SOURCES) $(TEST_SOURCES)
+format: $(RACCOON_SOURCES) $(TEST_SOURCES) $(BENCHMARK_SOURCES) $(BENCHMARK_HEADERS)
 	clang-format -i $^
