@@ -1,8 +1,8 @@
 #pragma once
-#include "field.hpp"
-#include "poly.hpp"
-#include "poly_vec.hpp"
-#include "serialization.hpp"
+#include "raccoon/internals/math/field.hpp"
+#include "raccoon/internals/polynomial/poly.hpp"
+#include "raccoon/internals/polynomial/poly_vec.hpp"
+#include "raccoon/internals/utility/serialization.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <optional>

@@ -1,7 +1,6 @@
 #pragma once
 #include "internals/public_key.hpp"
 #include "internals/secret_key.hpp"
-#include "raccoon/internals/prng.hpp"
 
 // Raccoon-256 Signing Algorithm.
 namespace raccoon256 {

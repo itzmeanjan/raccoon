@@ -1,12 +1,12 @@
 #pragma once
-#include "challenge.hpp"
-#include "field.hpp"
-#include "poly_mat.hpp"
-#include "poly_vec.hpp"
-#include "serialization.hpp"
+#include "raccoon/internals/math/field.hpp"
+#include "raccoon/internals/polynomial/challenge.hpp"
+#include "raccoon/internals/polynomial/poly_mat.hpp"
+#include "raccoon/internals/polynomial/poly_vec.hpp"
+#include "raccoon/internals/utility/serialization.hpp"
+#include "raccoon/internals/utility/utils.hpp"
 #include "shake256.hpp"
 #include "signature.hpp"
-#include "utils.hpp"
 #include <array>
 #include <cstdint>
 

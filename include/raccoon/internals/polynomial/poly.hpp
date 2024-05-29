@@ -1,10 +1,10 @@
 #pragma once
-#include "field.hpp"
-#include "mrng.hpp"
-#include "prng.hpp"
+#include "raccoon/internals/math/field.hpp"
+#include "raccoon/internals/rng/mrng.hpp"
+#include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/utils.hpp"
 #include "shake256.hpp"
 #include "subtle.hpp"
-#include "utils.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>

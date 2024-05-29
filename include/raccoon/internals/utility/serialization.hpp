@@ -1,7 +1,7 @@
 #pragma once
-#include "poly_vec.hpp"
-#include "prng.hpp"
-#include "utils.hpp"
+#include "raccoon/internals/polynomial/poly_vec.hpp"
+#include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/utils.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <limits>
