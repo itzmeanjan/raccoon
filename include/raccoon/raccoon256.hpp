@@ -20,6 +20,9 @@ constexpr std::array<size_t, 6> rep{ 8, 4, 2, 4, 2, 4 };
 constexpr std::array<size_t, 6> 𝑢t{ 6, 6, 6, 5, 5, 4 };
 constexpr std::array<size_t, 6> 𝑢w{ 41, 41, 41, 40, 40, 39 };
 
+// Raccoon-256 seed byte length, used in key generation.
+constexpr size_t SEED_BYTE_LEN = 𝜅 / std::numeric_limits<uint8_t>::digits;
+
 // Raccoon-256 public key byte length.
 constexpr size_t PKEY_BYTE_LEN = raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>();
 
@@ -79,7 +82,7 @@ public:
   static inline constexpr size_t get_byte_len() { return sk256_t::get_byte_len(); }
 
   // Generates a new Raccoon-256 keypair, given a 16 -bytes seed.
-  static inline constexpr raccoon256_skey_t generate(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed)
+  static inline constexpr raccoon256_skey_t generate(std::span<const uint8_t, SEED_BYTE_LEN> seed)
   {
     return raccoon256_skey_t(sk256_t::template generate<𝑢t[raccoon_utils::log2<d>()], rep[raccoon_utils::log2<d>()]>(seed));
   }
