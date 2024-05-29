@@ -6,7 +6,7 @@ template<size_t d>
 static void
 bench_raccoon192_keygen(benchmark::State& state)
 {
-  std::array<uint8_t, 24> seed{};
+  std::array<uint8_t, raccoon192::SEED_BYTE_LEN> seed{};
   std::array<uint8_t, raccoon192::raccoon192_skey_t<d>::get_byte_len()> sk_bytes{};
 
   prng::prng_t prng{};
@@ -31,7 +31,7 @@ bench_raccoon192_sign(benchmark::State& state)
 {
   constexpr size_t fixed_msg_byte_len = 32;
 
-  std::array<uint8_t, 24> seed{};
+  std::array<uint8_t, raccoon192::SEED_BYTE_LEN> seed{};
   std::array<uint8_t, raccoon192::SIG_BYTE_LEN> sig_bytes{};
   std::vector<uint8_t> msg(fixed_msg_byte_len, 0);
 
@@ -59,7 +59,7 @@ bench_raccoon192_verify(benchmark::State& state)
   constexpr size_t fixed_msg_byte_len = 32;
   constexpr size_t num_shares = 1;
 
-  std::array<uint8_t, 24> seed{};
+  std::array<uint8_t, raccoon192::SEED_BYTE_LEN> seed{};
   std::array<uint8_t, raccoon192::SIG_BYTE_LEN> sig_bytes{};
   std::vector<uint8_t> msg(fixed_msg_byte_len, 0);
 
