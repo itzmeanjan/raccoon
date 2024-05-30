@@ -85,20 +85,18 @@ bench_raccoon256_verify(benchmark::State& state)
   state.SetItemsProcessed(state.iterations());
 }
 
-// clang-format off
-BENCHMARK(bench_raccoon256_keygen<1>)->Name("raccoon256/keygen/unmasked")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_keygen<2>)->Name("raccoon256/keygen/masked/order 1")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_keygen<4>)->Name("raccoon256/keygen/masked/order 3")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_keygen<8>)->Name("raccoon256/keygen/masked/order 7")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_keygen<16>)->Name("raccoon256/keygen/masked/order 15")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_keygen<32>)->Name("raccoon256/keygen/masked/order 31")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_keygen<1>)->Name("raccoon256/keygen/1")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_keygen<2>)->Name("raccoon256/keygen/2")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_keygen<4>)->Name("raccoon256/keygen/4")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_keygen<8>)->Name("raccoon256/keygen/8")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_keygen<16>)->Name("raccoon256/keygen/16")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_keygen<32>)->Name("raccoon256/keygen/32")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
 
-BENCHMARK(bench_raccoon256_sign<1>)->Name("raccoon256/sign/unmasked")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_sign<2>)->Name("raccoon256/sign/masked/order 1")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_sign<4>)->Name("raccoon256/sign/masked/order 3")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_sign<8>)->Name("raccoon256/sign/masked/order 7")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_sign<16>)->Name("raccoon256/sign/masked/order 15")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-BENCHMARK(bench_raccoon256_sign<32>)->Name("raccoon256/sign/masked/order 31")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_sign<1>)->Name("raccoon256/sign/1")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_sign<2>)->Name("raccoon256/sign/2")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_sign<4>)->Name("raccoon256/sign/4")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_sign<8>)->Name("raccoon256/sign/8")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_sign<16>)->Name("raccoon256/sign/16")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
+BENCHMARK(bench_raccoon256_sign<32>)->Name("raccoon256/sign/32")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
 
 BENCHMARK(bench_raccoon256_verify)->Name("raccoon256/verify")->ComputeStatistics("min", compute_min)->ComputeStatistics("max", compute_max);
-// clang-format on
