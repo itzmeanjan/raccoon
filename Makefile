@@ -37,6 +37,7 @@ BENCHMARK_LINK_FLAGS = -lbenchmark -lbenchmark_main -lpthread
 BENCHMARK_BINARY = $(BUILD_DIR)/bench.out
 PERF_LINK_FLAGS = -lbenchmark -lbenchmark_main -lpfm -lpthread
 PERF_BINARY = $(BUILD_DIR)/perf.out
+BENCHMARK_OUT_FILE = bench_result_on_$(shell uname -s)_$(shell uname -r)_$(shell uname -m)_with_$(CXX)_$(shell $(CXX) -dumpversion).json
 
 all: test
 
@@ -96,14 +97,14 @@ $(BENCHMARK_BINARY): $(BENCHMARK_OBJECTS)
 
 benchmark: $(BENCHMARK_BINARY)
 	# Must *not* build google-benchmark with libPFM
-	./$< --benchmark_time_unit=ms --benchmark_min_warmup_time=.5 --benchmark_enable_random_interleaving=true --benchmark_repetitions=16 --benchmark_min_time=0.1s --benchmark_display_aggregates_only=true --benchmark_counters_tabular=true
+	./$< --benchmark_time_unit=ms --benchmark_min_warmup_time=.5 --benchmark_enable_random_interleaving=true --benchmark_repetitions=16 --benchmark_min_time=0.1s --benchmark_display_aggregates_only=true --benchmark_report_aggregates_only=true --benchmark_counters_tabular=true --benchmark_out_format=json --benchmark_out=$(BENCHMARK_OUT_FILE)
 
 $(PERF_BINARY): $(BENCHMARK_OBJECTS)
 	$(CXX) $(OPT_FLAGS) $(LINK_FLAGS) $^ $(PERF_LINK_FLAGS) -o $@
 
 perf: $(PERF_BINARY)
 	# Must build google-benchmark with libPFM, follow https://gist.github.com/itzmeanjan/05dc3e946f635d00c5e0b21aae6203a7
-	./$< --benchmark_time_unit=ms --benchmark_min_warmup_time=.5 --benchmark_enable_random_interleaving=true --benchmark_repetitions=16 --benchmark_min_time=0.1s --benchmark_display_aggregates_only=true --benchmark_counters_tabular=true --benchmark_perf_counters=CYCLES
+	./$< --benchmark_time_unit=ms --benchmark_min_warmup_time=.5 --benchmark_enable_random_interleaving=true --benchmark_repetitions=16 --benchmark_min_time=0.1s --benchmark_display_aggregates_only=true --benchmark_report_aggregates_only=true --benchmark_counters_tabular=true --benchmark_perf_counters=CYCLES --benchmark_out_format=json --benchmark_out=$(BENCHMARK_OUT_FILE)
 
 .PHONY: format clean
 
