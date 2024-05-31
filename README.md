@@ -43,6 +43,10 @@ cmake version 3.28.3
 ```
 
 - For testing functional correctness this Raccoon digital signature implementation, you need to globally install `google-test` library and its headers. Follow guide @ https://github.com/google/googletest/tree/main/googletest#standalone-cmake-project, if you don't have it installed.
+- For benchmarking Raccoon signing scheme, you must have `google-benchmark` header and library globally installed. I found guide @ https://github.com/google/benchmark#installation helpful.
+
+> [!NOTE]
+> If you are on a machine running GNU/Linux kernel and you want to obtain CPU cycle count for digital signature scheme routines, you should consider building `google-benchmark` library with `libPFM` support, following https://gist.github.com/itzmeanjan/05dc3e946f635d00c5e0b21aae6203a7, a step-by-step guide. Find more about `libPFM` @ https://perfmon2.sourceforge.net.
 
 > [!TIP]
 > Git submodule based dependencies will generally be imported automatically, but in case that doesn't work, you can manually initialize and update them by issuing `$ git submodule update --init` from inside the root of this repository.
@@ -72,6 +76,273 @@ PASSED TESTS (8/8):
 
 > [!WARNING]
 > Running tests on a machine with small stack size might result in failure. I've observed `RaccoonSign.Raccoon256Signing` test failing on a `x86_64` machine running `Ubuntu 24.04 LTS` (powered by kernel `Linux 6.8.0-31-generic`), with stack size `8192 kB`. Bumping the stack size to `16384 kB`, gives it enough memory that all tests pass. Stack size can be changed by issuing `$ ulimit -s 16384`, while current stack size can be queried using `$ ulimit -s`.
+
+## Benchmarking
+
+Benchmarking key generation, signing and verification algorithms for various instantiations of Raccoon digital signature scheme can be done, by issuing
+
+```bash
+make benchmark -j  # If you haven't built google-benchmark library with libPFM support.
+make perf -j       # If you have built google-benchmark library with libPFM support.
+```
+
+> [!CAUTION]
+> You must put all the CPU cores on **performance** mode before running benchmark program, follow guide @ https://github.com/google/benchmark/blob/main/docs/reducing_variance.md.
+
+> [!WARNING]
+>  Relying only on average timing measurement for understanding performance characteristics of Raccoon signing algorithm may not be a good idea, given that it's a post-quantum digital signature scheme of "Fiat-Shamir with Aborts" paradigm - in simple words, during signing procedure it may need to abort and restart again, multiple times, based on what message is being signed or what sort of randomness is being used for signing. So it's a better idea to also compute other statistics such as minimum, maximum and median ( pretty useful ) when timing execution of signing procedure. In benchmark results, you'll see such statistics demonstrating broader performance characteristics of Raccoon signing procedure for various parameter sets.
+
+I've collected a few benchmark run results in JSON format, for sake of future benchmark comparison. For benchmark comparison, I use a tool, that comes with `google-benchmark`, see https://github.com/google/benchmark/blob/main/docs/tools.md.
+
+### On 12th Gen Intel(R) Core(TM) i7-1260P
+
+- (a) [Benchmark result on Linux_6.8.0-31-generic_x86_64 with g++-14](./bench_result_on_Linux_6.8.0-31-generic_x86_64_with_g++_14.json)
+- (b) [Benchmark result on Linux_6.8.0-31-generic_x86_64 with clang++-17.0.6](./bench_result_on_Linux_6.8.0-31-generic_x86_64_with_clang++_17.0.6.json)
+
+Benchmark comparison of `(a)` vs. `(b)`. 
+
+> [!NOTE] 
+> From following, it's very much evident that Clang-17 is producing much better code than GCC-14, for majority of the cases.
+
+```bash
+Comparing bench_result_on_Linux_6.8.0-31-generic_x86_64_with_g++_14.json to bench_result_on_Linux_6.8.0-31-generic_x86_64_with_clang++_17.0.6.json
+Benchmark                                     Time             CPU      Time Old      Time New       CPU Old       CPU New
+--------------------------------------------------------------------------------------------------------------------------
+raccoon128/keygen/1_mean                   -0.5118         -0.5118             1             1             1             1
+raccoon128/keygen/1_median                 -0.5114         -0.5114             1             1             1             1
+raccoon128/keygen/1_stddev                 -0.7776         -0.7782             0             0             0             0
+raccoon128/keygen/1_cv                     -0.5445         -0.5458             0             0             0             0
+raccoon128/keygen/1_min                    -0.5056         -0.5056             1             1             1             1
+raccoon128/keygen/1_max                    -0.5156         -0.5156             1             1             1             1
+raccoon128/keygen/2_mean                   -0.3221         -0.3221             2             1             2             1
+raccoon128/keygen/2_median                 -0.3222         -0.3223             2             1             2             1
+raccoon128/keygen/2_stddev                 -0.5945         -0.5999             0             0             0             0
+raccoon128/keygen/2_cv                     -0.4019         -0.4097             0             0             0             0
+raccoon128/keygen/2_min                    -0.3244         -0.3244             2             1             2             1
+raccoon128/keygen/2_max                    -0.3272         -0.3287             2             1             2             1
+raccoon128/keygen/4_mean                   -0.2400         -0.2400             3             2             3             2
+raccoon128/keygen/4_median                 -0.2417         -0.2418             3             2             3             2
+raccoon128/keygen/4_stddev                 +0.7452         +0.7214             0             0             0             0
+raccoon128/keygen/4_cv                     +1.2962         +1.2651             0             0             0             0
+raccoon128/keygen/4_min                    -0.2477         -0.2478             2             2             2             2
+raccoon128/keygen/4_max                    -0.2204         -0.2207             3             2             3             2
+raccoon128/keygen/8_mean                   -0.1601         -0.1600            10             8            10             8
+raccoon128/keygen/8_median                 -0.1590         -0.1591            10             8            10             8
+raccoon128/keygen/8_stddev                 -0.4934         -0.4675             0             0             0             0
+raccoon128/keygen/8_cv                     -0.3969         -0.3661             0             0             0             0
+raccoon128/keygen/8_min                    -0.1605         -0.1606            10             8            10             8
+raccoon128/keygen/8_max                    -0.1675         -0.1654            10             8            10             8
+raccoon128/keygen/16_mean                  -0.1057         -0.1056            13            12            13            12
+raccoon128/keygen/16_median                -0.1027         -0.1028            13            12            13            12
+raccoon128/keygen/16_stddev                -0.1968         -0.1650             0             0             0             0
+raccoon128/keygen/16_cv                    -0.1018         -0.0664             0             0             0             0
+raccoon128/keygen/16_min                   -0.1049         -0.1049            13            12            13            12
+raccoon128/keygen/16_max                   -0.0988         -0.0987            14            12            14            12
+raccoon128/keygen/32_mean                  -0.0754         -0.0753            52            48            52            48
+raccoon128/keygen/32_median                -0.0786         -0.0786            52            48            52            48
+raccoon128/keygen/32_stddev                +0.7218         +0.7609             0             1             0             1
+raccoon128/keygen/32_cv                    +0.8621         +0.9044             0             0             0             0
+raccoon128/keygen/32_min                   -0.0787         -0.0788            52            48            52            48
+raccoon128/keygen/32_max                   -0.0526         -0.0525            53            50            53            50
+raccoon128/sign/1_mean                     -0.4137         -0.4138             2             1             2             1
+raccoon128/sign/1_median                   -0.4069         -0.4070             2             1             2             1
+raccoon128/sign/1_stddev                   -0.8307         -0.8305             0             0             0             0
+raccoon128/sign/1_cv                       -0.7113         -0.7108             0             0             0             0
+raccoon128/sign/1_min                      -0.4115         -0.4115             2             1             2             1
+raccoon128/sign/1_max                      -0.4388         -0.4389             2             1             2             1
+raccoon128/sign/2_mean                     -0.2879         -0.2880             3             2             3             2
+raccoon128/sign/2_median                   -0.2933         -0.2933             3             2             3             2
+raccoon128/sign/2_stddev                   -0.7207         -0.7213             0             0             0             0
+raccoon128/sign/2_cv                       -0.6077         -0.6086             0             0             0             0
+raccoon128/sign/2_min                      -0.2845         -0.2845             3             2             3             2
+raccoon128/sign/2_max                      -0.2974         -0.2975             3             2             3             2
+raccoon128/sign/4_mean                     -0.2102         -0.2102             4             3             4             3
+raccoon128/sign/4_median                   -0.2065         -0.2066             4             3             4             3
+raccoon128/sign/4_stddev                   -0.1621         -0.1641             0             0             0             0
+raccoon128/sign/4_cv                       +0.0609         +0.0584             0             0             0             0
+raccoon128/sign/4_min                      -0.2145         -0.2145             4             3             4             3
+raccoon128/sign/4_max                      -0.1955         -0.1957             4             3             4             3
+raccoon128/sign/8_mean                     -0.0768         -0.0768            13            12            13            12
+raccoon128/sign/8_median                   -0.0802         -0.0803            13            11            13            11
+raccoon128/sign/8_stddev                   +1.6728         +1.6865             0             0             0             0
+raccoon128/sign/8_cv                       +1.8950         +1.9101             0             0             0             0
+raccoon128/sign/8_min                      -0.0896         -0.0897            12            11            12            11
+raccoon128/sign/8_max                      -0.0284         -0.0282            13            12            13            12
+raccoon128/sign/16_mean                    -0.0020         -0.0020            19            19            19            19
+raccoon128/sign/16_median                  -0.0142         -0.0141            19            18            19            18
+raccoon128/sign/16_stddev                  +8.8097         +8.6556             0             1             0             1
+raccoon128/sign/16_cv                      +8.8292         +8.6752             0             0             0             0
+raccoon128/sign/16_min                     -0.0144         -0.0144            19            18            19            18
+raccoon128/sign/16_max                     +0.0698         +0.0696            19            20            19            20
+raccoon128/sign/32_mean                    -0.0149         -0.0149            67            66            67            66
+raccoon128/sign/32_median                  -0.0140         -0.0138            67            66            67            66
+raccoon128/sign/32_stddev                  -0.3696         -0.3718             0             0             0             0
+raccoon128/sign/32_cv                      -0.3601         -0.3623             0             0             0             0
+raccoon128/sign/32_min                     -0.0146         -0.0146            66            65            66            65
+raccoon128/sign/32_max                     -0.0243         -0.0243            68            66            68            66
+raccoon128/verify_mean                     -0.2710         -0.2710             0             0             0             0
+raccoon128/verify_median                   -0.2717         -0.2718             0             0             0             0
+raccoon128/verify_stddev                   -0.2698         -0.2634             0             0             0             0
+raccoon128/verify_cv                       +0.0017         +0.0104             0             0             0             0
+raccoon128/verify_min                      -0.2734         -0.2734             0             0             0             0
+raccoon128/verify_max                      -0.2653         -0.2655             0             0             0             0
+raccoon192/keygen/1_mean                   -0.5004         -0.5003             2             1             2             1
+raccoon192/keygen/1_median                 -0.4997         -0.4993             2             1             2             1
+raccoon192/keygen/1_stddev                 -0.7233         -0.7237             0             0             0             0
+raccoon192/keygen/1_cv                     -0.4462         -0.4470             0             0             0             0
+raccoon192/keygen/1_min                    -0.4999         -0.4999             2             1             2             1
+raccoon192/keygen/1_max                    -0.5161         -0.5161             2             1             2             1
+raccoon192/keygen/2_mean                   -0.3313         -0.3316             2             2             2             2
+raccoon192/keygen/2_median                 -0.3332         -0.3333             2             2             2             2
+raccoon192/keygen/2_stddev                 -0.6006         -0.6225             0             0             0             0
+raccoon192/keygen/2_cv                     -0.4027         -0.4352             0             0             0             0
+raccoon192/keygen/2_min                    -0.3290         -0.3290             2             2             2             2
+raccoon192/keygen/2_max                    -0.3325         -0.3325             2             2             2             2
+raccoon192/keygen/4_mean                   -0.2307         -0.2308             3             3             3             3
+raccoon192/keygen/4_median                 -0.2320         -0.2319             3             3             3             3
+raccoon192/keygen/4_stddev                 +0.0346         +0.0061             0             0             0             0
+raccoon192/keygen/4_cv                     +0.3448         +0.3080             0             0             0             0
+raccoon192/keygen/4_min                    -0.2369         -0.2369             3             3             3             3
+raccoon192/keygen/4_max                    -0.2224         -0.2235             4             3             4             3
+raccoon192/keygen/8_mean                   -0.1712         -0.1712            13            11            13            11
+raccoon192/keygen/8_median                 -0.1774         -0.1774            13            11            13            11
+raccoon192/keygen/8_stddev                 +3.5352         +3.5054             0             0             0             0
+raccoon192/keygen/8_cv                     +4.4719         +4.4362             0             0             0             0
+raccoon192/keygen/8_min                    -0.1792         -0.1792            13            11            13            11
+raccoon192/keygen/8_max                    -0.1083         -0.1084            13            12            13            12
+raccoon192/keygen/16_mean                  -0.1025         -0.1025            18            16            18            16
+raccoon192/keygen/16_median                -0.0998         -0.0999            18            16            18            16
+raccoon192/keygen/16_stddev                -0.8155         -0.8143             0             0             0             0
+raccoon192/keygen/16_cv                    -0.7944         -0.7930             0             0             0             0
+raccoon192/keygen/16_min                   -0.1000         -0.1001            18            16            18            16
+raccoon192/keygen/16_max                   -0.1144         -0.1146            18            16            18            16
+raccoon192/keygen/32_mean                  -0.0792         -0.0793            69            64            69            64
+raccoon192/keygen/32_median                -0.0785         -0.0785            69            64            69            64
+raccoon192/keygen/32_stddev                -0.2230         -0.2240             1             0             1             0
+raccoon192/keygen/32_cv                    -0.1562         -0.1572             0             0             0             0
+raccoon192/keygen/32_min                   -0.0783         -0.0784            69            64            69            64
+raccoon192/keygen/32_max                   -0.0778         -0.0778            71            65            71            65
+raccoon192/sign/1_mean                     -0.3134         -0.3135             3             2             3             2
+raccoon192/sign/1_median                   -0.3059         -0.3060             3             2             3             2
+raccoon192/sign/1_stddev                   -0.6583         -0.6571             0             0             0             0
+raccoon192/sign/1_cv                       -0.5023         -0.5004             0             0             0             0
+raccoon192/sign/1_min                      -0.3161         -0.3163             3             2             3             2
+raccoon192/sign/1_max                      -0.3230         -0.3230             3             2             3             2
+raccoon192/sign/2_mean                     -0.2883         -0.2884             4             3             4             3
+raccoon192/sign/2_median                   -0.2897         -0.2897             4             3             4             3
+raccoon192/sign/2_stddev                   -0.5938         -0.5978             0             0             0             0
+raccoon192/sign/2_cv                       -0.4292         -0.4349             0             0             0             0
+raccoon192/sign/2_min                      -0.2874         -0.2874             4             3             4             3
+raccoon192/sign/2_max                      -0.2870         -0.2874             4             3             4             3
+raccoon192/sign/4_mean                     -0.2154         -0.2154             5             4             5             4
+raccoon192/sign/4_median                   -0.2222         -0.2223             5             4             5             4
+raccoon192/sign/4_stddev                   -0.6881         -0.6873             0             0             0             0
+raccoon192/sign/4_cv                       -0.6025         -0.6014             0             0             0             0
+raccoon192/sign/4_min                      -0.2136         -0.2137             5             4             5             4
+raccoon192/sign/4_max                      -0.2203         -0.2203             5             4             5             4
+raccoon192/sign/8_mean                     -0.0825         -0.0826            17            15            17            15
+raccoon192/sign/8_median                   -0.0804         -0.0805            17            15            17            15
+raccoon192/sign/8_stddev                   +0.0747         +0.0821             0             0             0             0
+raccoon192/sign/8_cv                       +0.1714         +0.1795             0             0             0             0
+raccoon192/sign/8_min                      -0.0861         -0.0862            17            15            17            15
+raccoon192/sign/8_max                      -0.0656         -0.0657            18            16            18            16
+raccoon192/sign/16_mean                    -0.0209         -0.0208            25            24            25            24
+raccoon192/sign/16_median                  -0.0167         -0.0165            25            24            25            24
+raccoon192/sign/16_stddev                  -0.5134         -0.5089             0             0             0             0
+raccoon192/sign/16_cv                      -0.5030         -0.4985             0             0             0             0
+raccoon192/sign/16_min                     -0.0161         -0.0161            24            24            24            24
+raccoon192/sign/16_max                     -0.0390         -0.0391            26            25            26            25
+raccoon192/sign/32_mean                    -0.0238         -0.0234            89            87            89            87
+raccoon192/sign/32_median                  -0.0207         -0.0208            89            87            89            87
+raccoon192/sign/32_stddev                  -0.3197         -0.2759             1             1             1             1
+raccoon192/sign/32_cv                      -0.3031         -0.2585             0             0             0             0
+raccoon192/sign/32_min                     -0.0205         -0.0205            88            86            88            86
+raccoon192/sign/32_max                     -0.0337         -0.0296            93            90            93            90
+raccoon192/verify_mean                     -0.2648         -0.2648             1             1             1             1
+raccoon192/verify_median                   -0.2638         -0.2637             1             1             1             1
+raccoon192/verify_stddev                   -0.2068         -0.2177             0             0             0             0
+raccoon192/verify_cv                       +0.0788         +0.0641             0             0             0             0
+raccoon192/verify_min                      -0.2713         -0.2713             1             1             1             1
+raccoon192/verify_max                      -0.2569         -0.2570             1             1             1             1
+raccoon256/keygen/1_mean                   -0.5017         -0.5020             2             1             2             1
+raccoon256/keygen/1_median                 -0.5015         -0.5016             2             1             2             1
+raccoon256/keygen/1_stddev                 -0.8982         -0.8478             0             0             0             0
+raccoon256/keygen/1_cv                     -0.7957         -0.6944             0             0             0             0
+raccoon256/keygen/1_min                    -0.4974         -0.5015             2             1             2             1
+raccoon256/keygen/1_max                    -0.5153         -0.5153             2             1             2             1
+raccoon256/keygen/2_mean                   -0.3206         -0.3206             3             2             3             2
+raccoon256/keygen/2_median                 -0.3173         -0.3173             3             2             3             2
+raccoon256/keygen/2_stddev                 +0.1570         +0.1868             0             0             0             0
+raccoon256/keygen/2_cv                     +0.7030         +0.7468             0             0             0             0
+raccoon256/keygen/2_min                    -0.3301         -0.3302             3             2             3             2
+raccoon256/keygen/2_max                    -0.3072         -0.3063             3             2             3             2
+raccoon256/keygen/4_mean                   -0.2375         -0.2376             5             4             5             4
+raccoon256/keygen/4_median                 -0.2395         -0.2395             5             4             5             4
+raccoon256/keygen/4_stddev                 -0.1816         -0.1812             0             0             0             0
+raccoon256/keygen/4_cv                     +0.0734         +0.0739             0             0             0             0
+raccoon256/keygen/4_min                    -0.2384         -0.2385             5             4             5             4
+raccoon256/keygen/4_max                    -0.2351         -0.2348             5             4             5             4
+raccoon256/keygen/8_mean                   -0.1841         -0.1842            18            15            18            15
+raccoon256/keygen/8_median                 -0.1774         -0.1774            18            15            18            15
+raccoon256/keygen/8_stddev                 -0.9269         -0.9300             0             0             0             0
+raccoon256/keygen/8_cv                     -0.9104         -0.9142             0             0             0             0
+raccoon256/keygen/8_min                    -0.1745         -0.1745            18            15            18            15
+raccoon256/keygen/8_max                    -0.2485         -0.2488            20            15            20            15
+raccoon256/keygen/16_mean                  -0.1083         -0.1082            25            22            25            22
+raccoon256/keygen/16_median                -0.1070         -0.1070            25            22            25            22
+raccoon256/keygen/16_stddev                +0.0537         +0.0928             0             0             0             0
+raccoon256/keygen/16_cv                    +0.1816         +0.2254             0             0             0             0
+raccoon256/keygen/16_min                   -0.1074         -0.1074            24            22            24            22
+raccoon256/keygen/16_max                   -0.0970         -0.0973            25            22            25            22
+raccoon256/keygen/32_mean                  -0.0743         -0.0743            94            87            94            87
+raccoon256/keygen/32_median                -0.0825         -0.0824            94            86            94            86
+raccoon256/keygen/32_stddev                +3.5875         +3.6592             1             2             1             2
+raccoon256/keygen/32_cv                    +3.9559         +4.0335             0             0             0             0
+raccoon256/keygen/32_min                   -0.0773         -0.0773            93            86            93            86
+raccoon256/keygen/32_max                   +0.0123         +0.0124            95            96            95            96
+raccoon256/sign/1_mean                     -0.4109         -0.4108             4             2             4             2
+raccoon256/sign/1_median                   -0.4183         -0.4176             4             2             4             2
+raccoon256/sign/1_stddev                   -0.6781         -0.6783             0             0             0             0
+raccoon256/sign/1_cv                       -0.4535         -0.4540             0             0             0             0
+raccoon256/sign/1_min                      -0.3995         -0.3995             4             2             4             2
+raccoon256/sign/1_max                      -0.4159         -0.4160             4             2             4             2
+raccoon256/sign/2_mean                     -0.3010         -0.3011             5             4             5             4
+raccoon256/sign/2_median                   -0.3042         -0.3048             5             4             5             4
+raccoon256/sign/2_stddev                   -0.7231         -0.7228             0             0             0             0
+raccoon256/sign/2_cv                       -0.6039         -0.6035             0             0             0             0
+raccoon256/sign/2_min                      -0.2959         -0.2959             5             4             5             4
+raccoon256/sign/2_max                      -0.3437         -0.3437             6             4             6             4
+raccoon256/sign/4_mean                     -0.1988         -0.1990             7             6             7             6
+raccoon256/sign/4_median                   -0.2033         -0.2034             7             6             7             6
+raccoon256/sign/4_stddev                   -0.4368         -0.4348             0             0             0             0
+raccoon256/sign/4_cv                       -0.2970         -0.2944             0             0             0             0
+raccoon256/sign/4_min                      -0.2057         -0.2058             7             6             7             6
+raccoon256/sign/4_max                      -0.2217         -0.2216             8             6             8             6
+raccoon256/sign/8_mean                     -0.0829         -0.0827            23            21            23            21
+raccoon256/sign/8_median                   -0.0888         -0.0888            23            21            23            21
+raccoon256/sign/8_stddev                   +3.3250         +3.5804             0             1             0             1
+raccoon256/sign/8_cv                       +3.7161         +3.9935             0             0             0             0
+raccoon256/sign/8_min                      -0.0929         -0.0930            23            21            23            21
+raccoon256/sign/8_max                      +0.0124         +0.0137            23            24            23            24
+raccoon256/sign/16_mean                    -0.0376         -0.0376            35            34            35            34
+raccoon256/sign/16_median                  -0.0213         -0.0213            34            33            34            33
+raccoon256/sign/16_stddev                  -0.2745         -0.2745             3             2             3             2
+raccoon256/sign/16_cv                      -0.2461         -0.2461             0             0             0             0
+raccoon256/sign/16_min                     -0.0267         -0.0268            34            33            34            33
+raccoon256/sign/16_max                     -0.0213         -0.0213            42            41            42            41
+raccoon256/sign/32_mean                    +0.0322         +0.0319           121           125           121           125
+raccoon256/sign/32_median                  -0.0298         -0.0299           121           117           121           117
+raccoon256/sign/32_stddev                +103.5137       +104.2132             0            30             0            30
+raccoon256/sign/32_cv                    +100.2581       +100.9636             0             0             0             0
+raccoon256/sign/32_min                     -0.0298         -0.0300           121           117           121           117
+raccoon256/sign/32_max                     +0.9422         +0.9397           121           236           121           236
+raccoon256/verify_mean                     -0.2872         -0.2874             1             1             1             1
+raccoon256/verify_median                   -0.2897         -0.2898             1             1             1             1
+raccoon256/verify_stddev                   -0.1890         -0.1988             0             0             0             0
+raccoon256/verify_cv                       +0.1378         +0.1242             0             0             0             0
+raccoon256/verify_min                      -0.2943         -0.2943             1             1             1             1
+raccoon256/verify_max                      -0.2826         -0.2830             1             1             1             1
+```
 
 ## Usage
 
