@@ -1,13 +1,13 @@
 #pragma once
-#include "challenge.hpp"
-#include "mrng.hpp"
-#include "params.hpp"
-#include "poly.hpp"
-#include "poly_mat.hpp"
-#include "prng.hpp"
 #include "public_key.hpp"
+#include "raccoon/internals/polynomial/challenge.hpp"
+#include "raccoon/internals/polynomial/poly.hpp"
+#include "raccoon/internals/polynomial/poly_mat.hpp"
+#include "raccoon/internals/rng/mrng.hpp"
+#include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/params.hpp"
+#include "raccoon/internals/utility/utils.hpp"
 #include "signature.hpp"
-#include "utils.hpp"
 
 namespace raccoon_skey {
 

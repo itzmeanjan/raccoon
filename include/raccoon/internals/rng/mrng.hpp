@@ -2,7 +2,7 @@
 #include "ascon/aead/ascon80pq.hpp"
 #include "ascon/ascon_perm.hpp"
 #include "ascon/utils.hpp"
-#include "utils.hpp"
+#include "raccoon/internals/utility/utils.hpp"
 #include <array>
 #include <numeric>
 

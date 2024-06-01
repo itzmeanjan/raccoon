@@ -1,5 +1,5 @@
 #pragma once
-#include "prng.hpp"
+#include "raccoon/internals/rng/prng.hpp"
 #include "u128.hpp"
 #include <cstdint>
 #include <limits>
