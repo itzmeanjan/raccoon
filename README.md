@@ -42,8 +42,8 @@ $ cmake --version
 cmake version 3.28.3
 ```
 
-- For testing functional correctness this Raccoon digital signature implementation, you need to globally install `google-test` library and its headers. Follow guide @ https://github.com/google/googletest/tree/main/googletest#standalone-cmake-project, if you don't have it installed.
-- For benchmarking Raccoon signing scheme, you must have `google-benchmark` header and library globally installed. I found guide @ https://github.com/google/benchmark#installation helpful.
+- For testing functional correctness of this Raccoon digital signature scheme implementation, you need to globally install `google-test` library and its headers. Follow guide @ https://github.com/google/googletest/tree/main/googletest#standalone-cmake-project, if you don't have it installed.
+- For benchmarking Raccoon digital signature scheme, you must have `google-benchmark` header and library globally installed. I found guide @ https://github.com/google/benchmark#installation helpful.
 
 > [!NOTE]
 > If you are on a machine running GNU/Linux kernel and you want to obtain CPU cycle count for digital signature scheme routines, you should consider building `google-benchmark` library with `libPFM` support, following https://gist.github.com/itzmeanjan/05dc3e946f635d00c5e0b21aae6203a7, a step-by-step guide. Find more about `libPFM` @ https://perfmon2.sourceforge.net.
@@ -53,7 +53,7 @@ cmake version 3.28.3
 
 ## Testing
 
-For ensuring functional correctness of this Raccoon post-quantum digital signature algorithm library implemenation, issue
+For ensuring functional correctness of this Raccoon post-quantum digital signature scheme's library implemenation, issue
 
 ```bash
 make -j            # Run tests without any sort of sanitizers
@@ -62,7 +62,6 @@ make ubsan_test -j # Run tests with UndefinedBehaviourSanitizer enabled
 ```
 
 ```bash
-[8/8] RaccoonSign.Raccoon256Signing (13103 ms)
 PASSED TESTS (8/8):
        1 ms: build/test.out RaccoonSign.EncodeDecodePublicKey
        2 ms: build/test.out RaccoonSign.UnmaskedSecretKeyVectorCompressionAndDecompression
@@ -90,16 +89,15 @@ make perf -j       # If you have built google-benchmark library with libPFM supp
 > You must put all the CPU cores on **performance** mode before running benchmark program, follow guide @ https://github.com/google/benchmark/blob/main/docs/reducing_variance.md.
 
 > [!WARNING]
->  Relying only on average timing measurement for understanding performance characteristics of Raccoon signing algorithm may not be a good idea, given that it's a post-quantum digital signature scheme of "Fiat-Shamir with Aborts" paradigm - in simple words, during signing procedure it may need to abort and restart again, multiple times, based on what message is being signed or what sort of randomness is being used for signing. So it's a better idea to also compute other statistics such as minimum, maximum and median ( pretty useful ) when timing execution of signing procedure. In benchmark results, you'll see such statistics demonstrating broader performance characteristics of Raccoon signing procedure for various parameter sets.
+>  Relying only on average timing measurement for understanding performance characteristics of Raccoon signing algorithm may not be a good idea, given that it's a post-quantum digital signature scheme of "Fiat-Shamir with Aborts" paradigm - in simple words, during signing procedure it may need to abort and restart again, multiple times, based on what message is being signed or what sort of randomness is being used for signing. So it's a better idea to also compute other statistics such as minimum, maximum and median ( pretty useful ) when timing execution of signing procedure. In collected benchmark results, you'll see such statistics, demonstrating broader performance characteristics of Raccoon signing procedure, for various parameter sets.
 
-I've collected a few benchmark run results in JSON format, for sake of future benchmark comparison. For benchmark comparison, I use a tool, that comes with `google-benchmark`, see https://github.com/google/benchmark/blob/main/docs/tools.md.
+I've collected a few benchmark run results, in JSON format, for sake of future benchmark comparison. For benchmark comparison, I use a tool, that comes with `google-benchmark`, see https://github.com/google/benchmark/blob/main/docs/tools.md.
 
-### On 12th Gen Intel(R) Core(TM) i7-1260P
+1) On 12th Gen Intel(R) Core(TM) i7-1260P
+  - (a) [Benchmark result on Linux_6.8.0-31-generic_x86_64 with g++-14](./bench_result_on_Linux_6.8.0-31-generic_x86_64_with_g++_14.json)
+  - (b) [Benchmark result on Linux_6.8.0-31-generic_x86_64 with clang++-17.0.6](./bench_result_on_Linux_6.8.0-31-generic_x86_64_with_clang++_17.0.6.json)
 
-- (a) [Benchmark result on Linux_6.8.0-31-generic_x86_64 with g++-14](./bench_result_on_Linux_6.8.0-31-generic_x86_64_with_g++_14.json)
-- (b) [Benchmark result on Linux_6.8.0-31-generic_x86_64 with clang++-17.0.6](./bench_result_on_Linux_6.8.0-31-generic_x86_64_with_clang++_17.0.6.json)
-
-Benchmark comparison of `(a)` vs. `(b)`. 
+Benchmark comparison of `1(a)` vs. `1(b)`.
 
 > [!NOTE] 
 > From following, it's very much evident that Clang-17 is producing much better code than GCC-14, for majority of the cases.
