@@ -204,6 +204,12 @@ public:
   {
     poly_t res{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC unroll 8
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] * rhs[i];
     }
