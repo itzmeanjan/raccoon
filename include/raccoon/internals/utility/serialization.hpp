@@ -120,7 +120,7 @@ mask_compress(const raccoon_poly_vec::poly_vec_t<l, d>& s,
     std::copy_n(z.begin(), z.size(), s_c.subspan(s_c_off).begin());
 
     for (size_t ridx = 0; ridx < x.num_rows(); ridx++) {
-      std::array<uint8_t, 8> hdr{ static_cast<uint8_t>('K'), static_cast<uint8_t>(sidx), static_cast<uint8_t>(ridx) };
+      std::array<const uint8_t, 8> hdr{ static_cast<uint8_t>('K'), static_cast<uint8_t>(sidx), static_cast<uint8_t>(ridx) };
       r.sampleQ<𝜅>(hdr, z);
 
       x[ridx][0] -= r;
@@ -194,7 +194,7 @@ mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * raccoon_poly::N *
     const size_t s_c_off = (sidx - 1) * (𝜅 / 8);
 
     for (size_t ridx = 0; ridx < s.num_rows(); ridx++) {
-      std::array<uint8_t, 8> hdr{ static_cast<uint8_t>('K'), static_cast<uint8_t>(sidx), static_cast<uint8_t>(ridx) };
+      std::array<const uint8_t, 8> hdr{ static_cast<uint8_t>('K'), static_cast<uint8_t>(sidx), static_cast<uint8_t>(ridx) };
       s[ridx][sidx].template sampleQ<𝜅>(hdr, std::span<const uint8_t, 𝜅 / 8>(s_c.subspan(s_c_off, 𝜅 / 8)));
     }
   }

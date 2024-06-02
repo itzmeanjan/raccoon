@@ -12,16 +12,16 @@
 namespace raccoon_poly {
 
 // N is set to 512 for all parameter sets of Raccoon.
-constexpr size_t LOG2N = 9;
-constexpr size_t N = 1ul << LOG2N;
+static constexpr size_t LOG2N = 9;
+static constexpr size_t N = 1ul << LOG2N;
 
 // First primitive 1024 (=2*N) -th root of unity modulo q | q = 549824583172097
 //
 // Meaning, 358453792785495 ** 1024 == 1 (mod q)
-constexpr field::zq_t ζ(358453792785495ul);
+static constexpr field::zq_t ζ(358453792785495ul);
 
 // Multiplicative inverse of N over Z_q | q = 549824583172097
-constexpr auto INV_N = []() {
+static constexpr auto INV_N = []() {
   constexpr auto inv_n = field::zq_t(N).inv();
   static_assert(inv_n.second == field::is_invertible_t::yes, "N is not invertible for modulus Q");
 
@@ -48,7 +48,7 @@ bit_rev(const size_t v)
 }
 
 // Compile-time computes ζ ^ i | 0 <= i < N/2
-constexpr auto ζ_EXP_first = []() {
+static constexpr auto ζ_EXP_first = []() {
   std::array<field::zq_t, N / 2> res{};
 
   for (size_t i = 0; i < res.size(); i++) {
@@ -59,7 +59,7 @@ constexpr auto ζ_EXP_first = []() {
 }();
 
 // Compile-time computes ζ ^ i | N/2 <= i < N
-constexpr auto ζ_EXP_last = []() {
+static constexpr auto ζ_EXP_last = []() {
   std::array<field::zq_t, ζ_EXP_first.size()> res{};
 
   for (size_t i = ζ_EXP_first.size(); i < 2 * ζ_EXP_first.size(); i++) {
@@ -70,7 +70,7 @@ constexpr auto ζ_EXP_last = []() {
 }();
 
 // Compile-time compute table holding powers of ζ, which is used for computing NTT over degree-511 polynomial s.t. coefficients ∈ Zq.
-constexpr auto ζ_EXP = []() {
+static constexpr auto ζ_EXP = []() {
   std::array<field::zq_t, N> res{};
   auto _res = std::span(res);
 
@@ -97,10 +97,10 @@ compute_neg_powers_of_ζ()
 }
 
 // Precomputed table of negated powers of ζ, used when computing iNTT.
-constexpr auto ζ_NEG_EXP = compute_neg_powers_of_ζ();
+static constexpr auto ζ_NEG_EXP = compute_neg_powers_of_ζ();
 
 // Degree 511 polynomial, defined over Zq
-struct poly_t
+struct alignas(32) poly_t
 {
 private:
   std::array<field::zq_t, N> coeffs{};
@@ -343,14 +343,16 @@ public:
   //
   // This routine is invoked when expanding seed for computing matrix A.
   template<size_t 𝜅>
-  inline constexpr void sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
+  static inline constexpr poly_t sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
   {
-    shake256::shake256_t xof;
+    poly_t res{};
+
+    shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(𝜎);
     xof.finalize();
 
-    for (size_t i = 0; i < this->num_coeffs(); i++) {
+    for (size_t i = 0; i < res.num_coeffs(); i++) {
       uint64_t f_i = 0;
 
       do {
@@ -363,8 +365,10 @@ public:
         f_i = b_word & mask49;
       } while (f_i >= field::Q);
 
-      (*this)[i] = f_i;
+      res[i] = f_i;
     }
+
+    return res;
   }
 
   // Uniform random sampling of degree n-1 polynomial using a Masked Random Number Generator, following implementation @
@@ -401,12 +405,10 @@ public:
   static inline constexpr poly_t chal_poly(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)
   {
     poly_t c_poly{};
-    shake256::shake256_t xof;
 
-    std::array<uint8_t, sizeof(uint64_t)> hdr{};
-    hdr[0] = 'c';
-    hdr[1] = 𝜔;
+    std::array<const uint8_t, 8> hdr{ static_cast<uint8_t>('c'), static_cast<uint8_t>(𝜔) };
 
+    shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(c_hash);
     xof.finalize();

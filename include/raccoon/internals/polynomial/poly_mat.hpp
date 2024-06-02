@@ -49,8 +49,8 @@ public:
 
     for (size_t ridx = 0; ridx < k; ridx++) {
       for (size_t cidx = 0; cidx < l; cidx++) {
-        std::array<uint8_t, 8> hdr{ static_cast<uint8_t>('A'), static_cast<uint8_t>(ridx), static_cast<uint8_t>(cidx) };
-        A[{ ridx, cidx }].template sampleQ<𝜅>(hdr, seed);
+        std::array<const uint8_t, 8> hdr{ static_cast<uint8_t>('A'), static_cast<uint8_t>(ridx), static_cast<uint8_t>(cidx) };
+        A[{ ridx, cidx }] = raccoon_poly::poly_t::sampleQ<𝜅>(hdr, seed);
       }
     }
 

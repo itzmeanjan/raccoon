@@ -7,16 +7,16 @@
 
 namespace field {
 
-constexpr uint32_t Q1 = (1u << 24) - (1u << 18) + 1u;
-constexpr uint32_t Q2 = (1u << 25) - (1u << 18) + 1u;
+static constexpr uint32_t Q1 = (1u << 24) - (1u << 18) + 1u;
+static constexpr uint32_t Q2 = (1u << 25) - (1u << 18) + 1u;
 
 // Raccoon Modulus `Q` is a composite number defined in section 2.7.2 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf
-constexpr uint64_t Q = static_cast<uint64_t>(Q1) * static_cast<uint64_t>(Q2);
+static constexpr uint64_t Q = static_cast<uint64_t>(Q1) * static_cast<uint64_t>(Q2);
 
-constexpr size_t Q_BIT_WIDTH = std::bit_width(Q);
+static constexpr size_t Q_BIT_WIDTH = std::bit_width(Q);
 
 // Precomputed Barrett Reduction Constant, see https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L16-L23
-constexpr uint64_t R = ((u128::u128_t::from(1ul) << (2 * Q_BIT_WIDTH)) / u128::u128_t::from(Q)).to<uint64_t>();
+static constexpr uint64_t R = ((u128::u128_t::from(1ul) << (2 * Q_BIT_WIDTH)) / u128::u128_t::from(Q)).to<uint64_t>();
 
 // Data type denoting whether `a` is invertible for modulus Q or not.
 enum class is_invertible_t : uint8_t
@@ -117,7 +117,7 @@ public:
   inline constexpr zq_t() = default;
   inline constexpr zq_t(const uint64_t v) { this->v = v; }
 
-  static inline constexpr zq_t zero() { return zq_t(); }
+  static inline constexpr zq_t zero() { return zq_t(0); }
   static inline constexpr zq_t one() { return zq_t(1); }
 
   // Modulo addition over field Zq
