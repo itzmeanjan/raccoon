@@ -3,7 +3,6 @@
 #include "raccoon/internals/rng/prng.hpp"
 #include "raccoon/internals/utility/utils.hpp"
 #include <algorithm>
-#include <cstdint>
 #include <limits>
 
 namespace raccoon_serialization {
@@ -121,10 +120,8 @@ mask_compress(const raccoon_poly_vec::poly_vec_t<l, d>& s,
     std::copy_n(z.begin(), z.size(), s_c.subspan(s_c_off).begin());
 
     for (size_t ridx = 0; ridx < x.num_rows(); ridx++) {
-      uint64_t hdr = 0;
-      hdr |= (static_cast<uint64_t>(ridx) << 16) | (static_cast<uint64_t>(sidx) << 8) | (static_cast<uint64_t>('K') << 0);
-
-      r.sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)), z);
+      std::array<uint8_t, 8> hdr{ static_cast<uint8_t>('K'), static_cast<uint8_t>(sidx), static_cast<uint8_t>(ridx) };
+      r.sampleQ<𝜅>(hdr, z);
 
       x[ridx][0] -= r;
     }
@@ -149,7 +146,7 @@ mask_compress(const raccoon_poly_vec::poly_vec_t<l, d>& s,
       const size_t writeable_bitcnt = buf_bit_off & (-8ul);
       const size_t writeable_bytecnt = writeable_bitcnt / std::numeric_limits<uint8_t>::digits;
 
-      std::copy_n(std::span<const uint8_t>(reinterpret_cast<uint8_t*>(&buffer), writeable_bytecnt).begin(), writeable_bytecnt, s_c.subspan(s_c_off).begin());
+      raccoon_utils::to_le_bytes(buffer, s_c.subspan(s_c_off, writeable_bytecnt));
 
       buffer >>= writeable_bitcnt;
       buf_bit_off -= writeable_bitcnt;
@@ -197,11 +194,8 @@ mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * raccoon_poly::N *
     const size_t s_c_off = (sidx - 1) * (𝜅 / 8);
 
     for (size_t ridx = 0; ridx < s.num_rows(); ridx++) {
-      uint64_t hdr = 0;
-      hdr |= (static_cast<uint64_t>(ridx) << 16) | (static_cast<uint64_t>(sidx) << 8) | (static_cast<uint64_t>('K') << 0);
-
-      s[ridx][sidx].template sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)),
-                                        std::span<const uint8_t, 𝜅 / 8>(s_c.subspan(s_c_off, 𝜅 / 8)));
+      std::array<uint8_t, 8> hdr{ static_cast<uint8_t>('K'), static_cast<uint8_t>(sidx), static_cast<uint8_t>(ridx) };
+      s[ridx][sidx].template sampleQ<𝜅>(hdr, std::span<const uint8_t, 𝜅 / 8>(s_c.subspan(s_c_off, 𝜅 / 8)));
     }
   }
 

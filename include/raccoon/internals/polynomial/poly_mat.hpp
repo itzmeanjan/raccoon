@@ -49,10 +49,8 @@ public:
 
     for (size_t ridx = 0; ridx < k; ridx++) {
       for (size_t cidx = 0; cidx < l; cidx++) {
-        uint64_t hdr = 0;
-        hdr |= (static_cast<uint64_t>(cidx) << 16) | (static_cast<uint64_t>(ridx) << 8) | (static_cast<uint64_t>('A') << 0);
-
-        A[{ ridx, cidx }].template sampleQ<𝜅>(std::span<const uint8_t, sizeof(hdr)>(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)), seed);
+        std::array<uint8_t, 8> hdr{ static_cast<uint8_t>('A'), static_cast<uint8_t>(ridx), static_cast<uint8_t>(cidx) };
+        A[{ ridx, cidx }].template sampleQ<𝜅>(hdr, seed);
       }
     }
 

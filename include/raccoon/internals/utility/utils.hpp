@@ -3,6 +3,7 @@
 #include "subtle.hpp"
 #include <algorithm>
 #include <bit>
+#include <concepts>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -19,25 +20,25 @@ from_le_bytes(std::span<const uint8_t> bytes)
   requires(std::is_unsigned_v<T> && (std::endian::native == std::endian::little))
 {
   T res = 0;
-  auto _res = std::span<uint8_t>(reinterpret_cast<uint8_t*>(&res), sizeof(res));
 
   const size_t copyable = std::min(sizeof(res), bytes.size());
-  std::copy_n(bytes.begin(), copyable, _res.begin());
+  for (size_t i = 0; i < copyable; i++) {
+    res |= (static_cast<T>(bytes[i]) << (i * std::numeric_limits<uint8_t>::digits));
+  }
 
   return res;
 }
 
 // Given an unsigned integer as input, this routine copies source bytes, following little-endian order, into destination
 // byte array of length n (>=0).
-template<typename T>
 static inline constexpr void
-to_le_bytes(T v, std::span<uint8_t> bytes)
-  requires(std::is_unsigned_v<T> && (std::endian::native == std::endian::little))
+to_le_bytes(const std::unsigned_integral auto v, std::span<uint8_t> bytes)
+  requires(std::endian::native == std::endian::little)
 {
-  auto _v = std::span<uint8_t>(reinterpret_cast<uint8_t*>(&v), sizeof(v));
-
   const size_t copyable = std::min(sizeof(v), bytes.size());
-  std::copy_n(_v.begin(), copyable, bytes.begin());
+  for (size_t i = 0; i < copyable; i++) {
+    bytes[i] = static_cast<uint8_t>(v >> (i * std::numeric_limits<uint8_t>::digits));
+  }
 }
 
 // Given an unsigned integer as input, this routine returns TRUTH value only if `v` is power of 2, otherwise it returns FALSE.
