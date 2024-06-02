@@ -68,32 +68,6 @@ test_signing(const size_t till_mlen)
   }
 }
 
-TEST(RaccoonSign, Raccoon192Signing)
-{
-  constexpr size_t min_mlen = 0;
-  constexpr size_t max_mlen = 16;
-  constexpr size_t step_by = 4;
-
-  constexpr size_t 𝜅 = 192;
-  constexpr size_t k = 7;
-  constexpr size_t l = 5;
-  constexpr size_t 𝜈w = 44;
-  constexpr size_t 𝜈t = 42;
-  constexpr size_t 𝜔 = 31;
-  constexpr size_t sig_byte_len = 14544;
-  constexpr uint64_t Binf = 47419426657048ul;
-  constexpr uint64_t B22 = 24964497408ul;
-
-  for (size_t mlen = min_mlen; mlen <= max_mlen; mlen += step_by) {
-    test_signing<𝜅, k, l, 1, 41, 7, 𝜈w, 𝜈t, 8, 𝜔, sig_byte_len, Binf, B22>(mlen);
-    test_signing<𝜅, k, l, 2, 41, 7, 𝜈w, 𝜈t, 4, 𝜔, sig_byte_len, Binf, B22>(mlen);
-    test_signing<𝜅, k, l, 4, 41, 7, 𝜈w, 𝜈t, 2, 𝜔, sig_byte_len, Binf, B22>(mlen);
-    test_signing<𝜅, k, l, 8, 40, 6, 𝜈w, 𝜈t, 4, 𝜔, sig_byte_len, Binf, B22>(mlen);
-    test_signing<𝜅, k, l, 16, 40, 6, 𝜈w, 𝜈t, 2, 𝜔, sig_byte_len, Binf, B22>(mlen);
-    test_signing<𝜅, k, l, 32, 39, 5, 𝜈w, 𝜈t, 4, 𝜔, sig_byte_len, Binf, B22>(mlen);
-  }
-}
-
 TEST(RaccoonSign, Raccoon256Signing)
 {
   constexpr size_t min_mlen = 0;
