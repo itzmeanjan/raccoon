@@ -247,6 +247,10 @@ public:
   {
     poly_t res{};
 
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 8
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] << offset;
     }
