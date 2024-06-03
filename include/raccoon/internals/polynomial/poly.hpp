@@ -4,7 +4,6 @@
 #include "raccoon/internals/rng/prng.hpp"
 #include "raccoon/internals/utility/utils.hpp"
 #include "shake256.hpp"
-#include "subtle.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -270,17 +269,28 @@ public:
   }
 
   // Centers the coefficients of a polynomial around 0, given that they ∈ [0, Q_prime] and resulting polynomial coeffiecients will be signed s.t. ∈ [-Q_prime/2,
-  // Q_prime/2). Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/polyr.py#L215-L218
+  // Q_prime/2). Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-c/polyr.c#L159-L172.
   template<uint64_t Q_prime>
   inline constexpr std::array<int64_t, N> center() const
   {
     constexpr auto Q_prime_by_2 = Q_prime / 2;
     std::array<int64_t, N> centered_poly{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC unroll 64
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < centered_poly.size(); i++) {
       const auto x = this->coeffs[i].raw();
-      const auto is_ge = subtle::ct_ge<uint64_t, uint64_t>(x + Q_prime_by_2, Q_prime);
-      const auto centered_x = static_cast<int64_t>(x) - static_cast<int64_t>(is_ge & Q_prime);
+
+      const auto y = x + Q_prime_by_2;
+      const auto t = y - Q_prime;
+      const auto mask = -(t >> 63);
+      const auto res = t + (mask & Q_prime);
+
+      const auto centered_x = static_cast<int64_t>(res) - static_cast<int64_t>(Q_prime_by_2);
 
       centered_poly[i] = centered_x;
     }
