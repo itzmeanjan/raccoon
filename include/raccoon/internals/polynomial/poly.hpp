@@ -157,6 +157,9 @@ public:
   {
     poly_t res{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       const auto added = (*this)[i].raw() + rhs[i].raw();
       const auto reduced = reduce_once_mod<Q_prime>(added);
