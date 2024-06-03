@@ -291,7 +291,6 @@ public:
       const auto res = t + (mask & Q_prime);
 
       const auto centered_x = static_cast<int64_t>(res) - static_cast<int64_t>(Q_prime_by_2);
-
       centered_poly[i] = centered_x;
     }
 
@@ -307,12 +306,10 @@ public:
 
     for (size_t i = 0; i < centered.size(); i++) {
       const auto x = centered[i];
-
       const auto mask = static_cast<uint64_t>(x >> 63);
-      const auto q_prime_masked = static_cast<int64_t>(Q_prime & mask);
-      const auto extended_x = static_cast<uint64_t>(x + q_prime_masked);
+      const auto unsigned_x = static_cast<uint64_t>(x + static_cast<int64_t>(mask & Q_prime));
 
-      extended[i] = extended_x;
+      extended[i] = unsigned_x;
     }
 
     return extended;
