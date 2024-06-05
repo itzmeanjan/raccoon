@@ -321,6 +321,9 @@ public:
   // Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
   inline constexpr void ntt()
   {
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 9
+#endif
     for (int64_t l = LOG2N - 1; l >= 0; l--) {
       const size_t len = 1ul << l;
       const size_t lenx2 = len << 1;
@@ -330,6 +333,10 @@ public:
         const size_t k_now = k_beg + (start >> (l + 1));
         const field::zq_t ζ_exp = ζ_EXP[k_now];
 
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 4
+#pragma GCC ivdep
+#endif
         for (size_t i = start; i < start + len; i++) {
           auto tmp = ζ_exp * (*this)[i + len];
 
