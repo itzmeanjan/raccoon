@@ -353,6 +353,9 @@ public:
   // bit-reversed order. Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
   inline constexpr void intt()
   {
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 9
+#endif
     for (size_t l = 0; l < LOG2N; l++) {
       const size_t len = 1ul << l;
       const size_t lenx2 = len << 1;
@@ -362,6 +365,10 @@ public:
         const size_t k_now = k_beg - (start >> (l + 1));
         const field::zq_t neg_ζ_exp = ζ_NEG_EXP[k_now];
 
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 2
+#pragma GCC ivdep
+#endif
         for (size_t i = start; i < start + len; i++) {
           const auto tmp = (*this)[i];
 
@@ -372,7 +379,12 @@ public:
       }
     }
 
-    for (size_t i = 0; i < this->num_coeffs(); i++) {
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC ivdep
+#endif
+    for (size_t i = 0; i < N; i++) {
       (*this)[i] *= INV_N;
     }
   }
