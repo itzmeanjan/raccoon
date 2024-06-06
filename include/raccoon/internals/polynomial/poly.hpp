@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <limits>
 
 namespace raccoon_poly {
 
@@ -396,27 +397,40 @@ public:
   template<size_t 𝜅>
   static inline constexpr poly_t sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
   {
-    poly_t res{};
-
     shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(𝜎);
     xof.finalize();
 
-    for (size_t i = 0; i < res.num_coeffs(); i++) {
-      uint64_t f_i = 0;
+    std::array<uint8_t, shake256::RATE / std::numeric_limits<uint8_t>::digits> buf{};
+    auto buf_span = std::span(buf);
 
-      do {
-        std::array<uint8_t, (field::Q_BIT_WIDTH + 7) / 8> b{};
-        xof.squeeze(b);
+    xof.squeeze(buf_span);
+    size_t buf_off = 0;
 
-        constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+    poly_t res{};
+    size_t coeff_idx = 0;
 
-        const auto b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
-        f_i = b_word & mask49;
-      } while (f_i >= field::Q);
+    while (coeff_idx < res.num_coeffs()) {
+      constexpr size_t needed_num_bytes = (field::Q_BIT_WIDTH + 7) / std::numeric_limits<uint8_t>::digits;
+      if ((buf_off + needed_num_bytes) > buf_span.size()) {
+        const size_t rem_num_bytes = buf_span.size() - buf_off;
 
-      res[i] = f_i;
+        std::copy_n(buf_span.subspan(buf_off, rem_num_bytes).begin(), rem_num_bytes, buf_span.begin());
+        xof.squeeze(buf_span.subspan(rem_num_bytes, buf_span.size() - rem_num_bytes));
+        buf_off = 0;
+      }
+
+      constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+      const auto coeff = raccoon_utils::from_le_bytes<uint64_t>(buf_span.subspan(buf_off, needed_num_bytes)) & mask49;
+      buf_off += needed_num_bytes;
+
+      if (coeff >= field::Q) {
+        continue;
+      }
+
+      res[coeff_idx] = coeff;
+      coeff_idx++;
     }
 
     return res;
