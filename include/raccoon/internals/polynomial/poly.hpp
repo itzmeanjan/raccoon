@@ -469,16 +469,16 @@ public:
   template<size_t 𝜅, size_t 𝜔>
   static inline constexpr poly_t chal_poly(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)
   {
-    poly_t c_poly{};
+    shake256::shake256_t xof{};
 
     std::array<const uint8_t, 8> hdr{ static_cast<uint8_t>('c'), static_cast<uint8_t>(𝜔) };
-
-    shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(c_hash);
     xof.finalize();
 
     constexpr uint16_t mask = (1u << LOG2N) - 1;
+
+    poly_t c_poly{};
     size_t non_zero_coeff_cnt = 0;
 
     while (non_zero_coeff_cnt < 𝜔) {
@@ -487,12 +487,13 @@ public:
 
       const auto b_word = raccoon_utils::from_le_bytes<uint16_t>(b);
       const auto b_0 = b_word & 0b1u;
-      const auto i = static_cast<uint16_t>(b_word >> 1u) & mask;
+      const uint16_t i = static_cast<uint16_t>(b_word >> 1u) & mask;
 
-      if (c_poly[i] == 0) {
-        c_poly[i] = field::zq_t::one() - field::zq_t(2 * b_0);
-        non_zero_coeff_cnt += 1;
-      }
+      const auto cond = c_poly[i] == 0;
+      const field::zq_t branch[] = { c_poly[i], field::zq_t::one() - field::zq_t(2 * b_0) };
+
+      c_poly[i] = branch[cond];
+      non_zero_coeff_cnt += static_cast<size_t>(cond);
     }
 
     return c_poly;
