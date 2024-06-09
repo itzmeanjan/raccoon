@@ -4,24 +4,24 @@
 #include "raccoon/internals/rng/prng.hpp"
 #include "raccoon/internals/utility/utils.hpp"
 #include "shake256.hpp"
-#include "subtle.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <limits>
 
 namespace raccoon_poly {
 
 // N is set to 512 for all parameter sets of Raccoon.
-constexpr size_t LOG2N = 9;
-constexpr size_t N = 1ul << LOG2N;
+static constexpr size_t LOG2N = 9;
+static constexpr size_t N = 1ul << LOG2N;
 
 // First primitive 1024 (=2*N) -th root of unity modulo q | q = 549824583172097
 //
 // Meaning, 358453792785495 ** 1024 == 1 (mod q)
-constexpr field::zq_t ζ(358453792785495ul);
+static constexpr field::zq_t ζ(358453792785495ul);
 
 // Multiplicative inverse of N over Z_q | q = 549824583172097
-constexpr auto INV_N = []() {
+static constexpr auto INV_N = []() {
   constexpr auto inv_n = field::zq_t(N).inv();
   static_assert(inv_n.second == field::is_invertible_t::yes, "N is not invertible for modulus Q");
 
@@ -48,7 +48,7 @@ bit_rev(const size_t v)
 }
 
 // Compile-time computes ζ ^ i | 0 <= i < N/2
-constexpr auto ζ_EXP_first = []() {
+static constexpr auto ζ_EXP_first = []() {
   std::array<field::zq_t, N / 2> res{};
 
   for (size_t i = 0; i < res.size(); i++) {
@@ -59,7 +59,7 @@ constexpr auto ζ_EXP_first = []() {
 }();
 
 // Compile-time computes ζ ^ i | N/2 <= i < N
-constexpr auto ζ_EXP_last = []() {
+static constexpr auto ζ_EXP_last = []() {
   std::array<field::zq_t, ζ_EXP_first.size()> res{};
 
   for (size_t i = ζ_EXP_first.size(); i < 2 * ζ_EXP_first.size(); i++) {
@@ -70,7 +70,7 @@ constexpr auto ζ_EXP_last = []() {
 }();
 
 // Compile-time compute table holding powers of ζ, which is used for computing NTT over degree-511 polynomial s.t. coefficients ∈ Zq.
-constexpr auto ζ_EXP = []() {
+static constexpr auto ζ_EXP = []() {
   std::array<field::zq_t, N> res{};
   auto _res = std::span(res);
 
@@ -97,10 +97,10 @@ compute_neg_powers_of_ζ()
 }
 
 // Precomputed table of negated powers of ζ, used when computing iNTT.
-constexpr auto ζ_NEG_EXP = compute_neg_powers_of_ζ();
+static constexpr auto ζ_NEG_EXP = compute_neg_powers_of_ζ();
 
 // Degree 511 polynomial, defined over Zq
-struct poly_t
+struct alignas(32) poly_t
 {
 private:
   std::array<field::zq_t, N> coeffs{};
@@ -136,6 +136,12 @@ public:
   {
     poly_t res{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC unroll 64
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] + rhs[i];
     }
@@ -151,6 +157,9 @@ public:
   {
     poly_t res{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       const auto added = (*this)[i].raw() + rhs[i].raw();
       const auto reduced = reduce_once_mod<Q_prime>(added);
@@ -166,6 +175,12 @@ public:
   {
     poly_t res{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC unroll 64
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] - rhs[i];
     }
@@ -197,6 +212,12 @@ public:
   {
     poly_t res{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC unroll 8
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] * rhs[i];
     }
@@ -226,6 +247,10 @@ public:
   {
     poly_t res{};
 
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 8
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < res.num_coeffs(); i++) {
       res[i] = (*this)[i] << offset;
     }
@@ -245,18 +270,28 @@ public:
   }
 
   // Centers the coefficients of a polynomial around 0, given that they ∈ [0, Q_prime] and resulting polynomial coeffiecients will be signed s.t. ∈ [-Q_prime/2,
-  // Q_prime/2). Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/polyr.py#L215-L218
+  // Q_prime/2). Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-c/polyr.c#L159-L172.
   template<uint64_t Q_prime>
   inline constexpr std::array<int64_t, N> center() const
   {
     constexpr auto Q_prime_by_2 = Q_prime / 2;
     std::array<int64_t, N> centered_poly{};
 
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC unroll 64
+#pragma GCC ivdep
+#endif
     for (size_t i = 0; i < centered_poly.size(); i++) {
       const auto x = this->coeffs[i].raw();
-      const auto is_ge = subtle::ct_ge<uint64_t, uint64_t>(x + Q_prime_by_2, Q_prime);
-      const auto centered_x = static_cast<int64_t>(x) - static_cast<int64_t>(is_ge & Q_prime);
 
+      const auto y = x + Q_prime_by_2;
+      const auto t = y - Q_prime;
+      const auto mask = -(t >> 63);
+      const auto res = t + (mask & Q_prime);
+
+      const auto centered_x = static_cast<int64_t>(res) - static_cast<int64_t>(Q_prime_by_2);
       centered_poly[i] = centered_x;
     }
 
@@ -272,12 +307,10 @@ public:
 
     for (size_t i = 0; i < centered.size(); i++) {
       const auto x = centered[i];
-
       const auto mask = static_cast<uint64_t>(x >> 63);
-      const auto q_prime_masked = static_cast<int64_t>(Q_prime & mask);
-      const auto extended_x = static_cast<uint64_t>(x + q_prime_masked);
+      const auto unsigned_x = static_cast<uint64_t>(x + static_cast<int64_t>(mask & Q_prime));
 
-      extended[i] = extended_x;
+      extended[i] = unsigned_x;
     }
 
     return extended;
@@ -289,6 +322,9 @@ public:
   // Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
   inline constexpr void ntt()
   {
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 9
+#endif
     for (int64_t l = LOG2N - 1; l >= 0; l--) {
       const size_t len = 1ul << l;
       const size_t lenx2 = len << 1;
@@ -298,6 +334,10 @@ public:
         const size_t k_now = k_beg + (start >> (l + 1));
         const field::zq_t ζ_exp = ζ_EXP[k_now];
 
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 4
+#pragma GCC ivdep
+#endif
         for (size_t i = start; i < start + len; i++) {
           auto tmp = ζ_exp * (*this)[i + len];
 
@@ -314,6 +354,9 @@ public:
   // bit-reversed order. Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
   inline constexpr void intt()
   {
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 9
+#endif
     for (size_t l = 0; l < LOG2N; l++) {
       const size_t len = 1ul << l;
       const size_t lenx2 = len << 1;
@@ -323,6 +366,10 @@ public:
         const size_t k_now = k_beg - (start >> (l + 1));
         const field::zq_t neg_ζ_exp = ζ_NEG_EXP[k_now];
 
+#if (not defined __clang__) && (defined __GNUG__)
+#pragma GCC unroll 2
+#pragma GCC ivdep
+#endif
         for (size_t i = start; i < start + len; i++) {
           const auto tmp = (*this)[i];
 
@@ -333,7 +380,12 @@ public:
       }
     }
 
-    for (size_t i = 0; i < this->num_coeffs(); i++) {
+#if defined __clang__
+#pragma clang loop unroll(enable) vectorize(enable) interleave(enable)
+#elif defined __GNUG__
+#pragma GCC ivdep
+#endif
+    for (size_t i = 0; i < N; i++) {
       (*this)[i] *= INV_N;
     }
   }
@@ -343,28 +395,45 @@ public:
   //
   // This routine is invoked when expanding seed for computing matrix A.
   template<size_t 𝜅>
-  inline constexpr void sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
+  static inline constexpr poly_t sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
   {
-    shake256::shake256_t xof;
+    shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(𝜎);
     xof.finalize();
 
-    for (size_t i = 0; i < this->num_coeffs(); i++) {
-      uint64_t f_i = 0;
+    std::array<uint8_t, shake256::RATE / std::numeric_limits<uint8_t>::digits> buf{};
+    auto buf_span = std::span(buf);
 
-      do {
-        std::array<uint8_t, (field::Q_BIT_WIDTH + 7) / 8> b{};
-        xof.squeeze(b);
+    xof.squeeze(buf_span);
+    size_t buf_off = 0;
 
-        constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+    poly_t res{};
+    size_t coeff_idx = 0;
 
-        const auto b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
-        f_i = b_word & mask49;
-      } while (f_i >= field::Q);
+    while (coeff_idx < res.num_coeffs()) {
+      constexpr size_t needed_num_bytes = (field::Q_BIT_WIDTH + 7) / std::numeric_limits<uint8_t>::digits;
+      if ((buf_off + needed_num_bytes) > buf_span.size()) {
+        const size_t rem_num_bytes = buf_span.size() - buf_off;
 
-      (*this)[i] = f_i;
+        std::copy_n(buf_span.subspan(buf_off, rem_num_bytes).begin(), rem_num_bytes, buf_span.begin());
+        xof.squeeze(buf_span.subspan(rem_num_bytes, buf_span.size() - rem_num_bytes));
+        buf_off = 0;
+      }
+
+      constexpr uint64_t mask49 = (1ul << field::Q_BIT_WIDTH) - 1ul;
+      const auto coeff = raccoon_utils::from_le_bytes<uint64_t>(buf_span.subspan(buf_off, needed_num_bytes)) & mask49;
+      buf_off += needed_num_bytes;
+
+      if (coeff >= field::Q) {
+        continue;
+      }
+
+      res[coeff_idx] = coeff;
+      coeff_idx++;
     }
+
+    return res;
   }
 
   // Uniform random sampling of degree n-1 polynomial using a Masked Random Number Generator, following implementation @
@@ -400,18 +469,16 @@ public:
   template<size_t 𝜅, size_t 𝜔>
   static inline constexpr poly_t chal_poly(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)
   {
-    poly_t c_poly{};
-    shake256::shake256_t xof;
+    shake256::shake256_t xof{};
 
-    std::array<uint8_t, sizeof(uint64_t)> hdr{};
-    hdr[0] = 'c';
-    hdr[1] = 𝜔;
-
+    std::array<const uint8_t, 8> hdr{ static_cast<uint8_t>('c'), static_cast<uint8_t>(𝜔) };
     xof.absorb(hdr);
     xof.absorb(c_hash);
     xof.finalize();
 
     constexpr uint16_t mask = (1u << LOG2N) - 1;
+
+    poly_t c_poly{};
     size_t non_zero_coeff_cnt = 0;
 
     while (non_zero_coeff_cnt < 𝜔) {
@@ -420,12 +487,13 @@ public:
 
       const auto b_word = raccoon_utils::from_le_bytes<uint16_t>(b);
       const auto b_0 = b_word & 0b1u;
-      const auto i = static_cast<uint16_t>(b_word >> 1u) & mask;
+      const uint16_t i = static_cast<uint16_t>(b_word >> 1u) & mask;
 
-      if (c_poly[i] == 0) {
-        c_poly[i] = field::zq_t::one() - field::zq_t(2 * b_0);
-        non_zero_coeff_cnt += 1;
-      }
+      const auto cond = c_poly[i] == 0;
+      const field::zq_t branch[] = { c_poly[i], field::zq_t::one() - field::zq_t(2 * b_0) };
+
+      c_poly[i] = branch[cond];
+      non_zero_coeff_cnt += static_cast<size_t>(cond);
     }
 
     return c_poly;

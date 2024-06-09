@@ -4,6 +4,7 @@
 namespace raccoon_masked_poly {
 
 // (Un)masked degree-511 polynomial, defined over Zq
+// Only when d = 1, it's the unmasked case.
 template<size_t d>
   requires(d > 0)
 struct masked_poly_t
@@ -19,7 +20,7 @@ private:
   {
     std::array<int64_t, raccoon_poly::N> f{};
 
-    shake256::shake256_t xof;
+    shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(𝜎);
     xof.finalize();
@@ -262,10 +263,8 @@ public:
       for (size_t sidx = 0; sidx < this->num_shares(); sidx++) {
         prng.read(𝜎);
 
-        uint64_t hdr_u = 0;
-        hdr_u |= (static_cast<uint64_t>(sidx) << 24) | (static_cast<uint64_t>(idx) << 16) | (static_cast<uint64_t>(i_rep) << 8) | static_cast<uint64_t>('u');
-
-        const auto poly_u = sampleU<u, 𝜅>(std::span<const uint8_t, sizeof(hdr_u)>(reinterpret_cast<uint8_t*>(&hdr_u), sizeof(hdr_u)), 𝜎);
+        std::array<const uint8_t, 8> hdr_u{ static_cast<uint8_t>('u'), static_cast<uint8_t>(i_rep), static_cast<uint8_t>(idx), static_cast<uint8_t>(sidx) };
+        const auto poly_u = sampleU<u, 𝜅>(hdr_u, 𝜎);
 
         for (size_t coeff_idx = 0; coeff_idx < poly_u.size(); coeff_idx++) {
           const auto coeff = static_cast<int64_t>((*this)[sidx][coeff_idx].raw()) + poly_u[coeff_idx];
