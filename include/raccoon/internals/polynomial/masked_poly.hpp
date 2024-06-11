@@ -15,31 +15,42 @@ private:
   // Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for uniform sampling a polynomial s.t. each of its
   // coefficients ∈ [-2^(u-1), 2^(u-1)), following algorithm 7 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
   template<size_t u, size_t 𝜅>
-  static inline constexpr std::array<int64_t, raccoon_poly::N> sampleU(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
+  static inline constexpr std::array<int64_t, raccoon_poly::N> sampleU(std::span<const uint8_t, std::numeric_limits<uint8_t>::digits> hdr,
+                                                                       std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
     requires(u > 0)
   {
     std::array<int64_t, raccoon_poly::N> f{};
+
+    constexpr size_t squeezed_bytes_per_coeff = (u + 7) / 8;
+    constexpr size_t total_squeezed_bytes = squeezed_bytes_per_coeff * f.size();
+
+    std::array<uint8_t, total_squeezed_bytes> squeezed_bytes{};
+    auto squeezed_bytes_span = std::span(squeezed_bytes);
 
     shake256::shake256_t xof{};
     xof.absorb(hdr);
     xof.absorb(𝜎);
     xof.finalize();
+    xof.squeeze(squeezed_bytes_span);
 
     constexpr uint64_t mask_msb = 1ul << (u - 1);
     constexpr uint64_t mask_lsb = mask_msb - 1;
 
-    constexpr size_t squeezable_bytes = (u + 7) / 8;
-    std::array<uint8_t, squeezable_bytes> b{};
+    size_t offset = 0;
+    size_t coeff_idx = 0;
 
-    for (size_t i = 0; i < f.size(); i++) {
-      xof.squeeze(b);
-
+    while (offset < total_squeezed_bytes) {
+      auto b = squeezed_bytes_span.subspan(offset, squeezed_bytes_per_coeff);
       const uint64_t b_word = raccoon_utils::from_le_bytes<uint64_t>(b);
+
       const auto msb = static_cast<int64_t>(b_word & mask_msb);
       const auto lsb = static_cast<int64_t>(b_word & mask_lsb);
 
-      const auto f_i = lsb - msb;
-      f[i] = f_i;
+      const auto f_coeff = lsb - msb;
+      f[coeff_idx] = f_coeff;
+
+      offset += squeezed_bytes_per_coeff;
+      coeff_idx++;
     }
 
     return f;
