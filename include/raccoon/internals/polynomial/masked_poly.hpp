@@ -3,7 +3,7 @@
 
 namespace raccoon_masked_poly {
 
-// (Un)masked degree-511 polynomial, defined over Zq
+// (Un)masked degree-511 polynomial, defined over Zq.
 // Only when d = 1, it's the unmasked case.
 template<size_t d>
   requires(d > 0)
