@@ -92,8 +92,7 @@ public:
   // Given a message, signs it, producing a byte serialized signature.
   inline constexpr void sign(std::span<const uint8_t> msg, std::span<uint8_t, SIG_BYTE_LEN> sig_bytes) const
   {
-    auto sig = this->sk.template sign<𝑢w[raccoon_utils::log2<d>()], 𝜈w, rep[raccoon_utils::log2<d>()], 𝜔, sig_bytes.size(), Binf, B22>(msg);
-    (void)sig.to_bytes(sig_bytes);
+    this->sk.template sign<𝑢w[raccoon_utils::log2<d>()], 𝜈w, rep[raccoon_utils::log2<d>()], 𝜔, sig_bytes.size(), Binf, B22>(msg, sig_bytes);
   }
 
   // Refresh the shares of masked secret key polynomial vector `[[s]]`
