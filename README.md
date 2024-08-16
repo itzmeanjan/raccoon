@@ -65,12 +65,12 @@ make ubsan_test -j # Run tests with UndefinedBehaviourSanitizer enabled
 PASSED TESTS (8/8):
        1 ms: build/test.out RaccoonSign.EncodeDecodePublicKey
        2 ms: build/test.out RaccoonSign.UnmaskedSecretKeyVectorCompressionAndDecompression
-       3 ms: build/test.out RaccoonSign.ZeroPolynomialSecretKeyEncodingAndDecoding
-      32 ms: build/test.out RaccoonSign.RefreshAndDecodingGadgets
-    1992 ms: build/test.out RaccoonSign.ArithmeticOverZq
-    7072 ms: build/test.out RaccoonSign.Raccoon128Signing
-    9536 ms: build/test.out RaccoonSign.Raccoon192Signing
-   13103 ms: build/test.out RaccoonSign.Raccoon256Signing
+       2 ms: build/test.out RaccoonSign.ZeroPolynomialSecretKeyEncodingAndDecoding
+      33 ms: build/test.out RaccoonSign.RefreshAndDecodingGadgets
+    2017 ms: build/test.out RaccoonSign.ArithmeticOverZq
+    7004 ms: build/test.out RaccoonSign.Raccoon128Signing
+    9923 ms: build/test.out RaccoonSign.Raccoon192Signing
+   12587 ms: build/test.out RaccoonSign.Raccoon256Signing
 ```
 
 > [!WARNING]
