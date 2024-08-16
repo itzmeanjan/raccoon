@@ -99,7 +99,7 @@ public:
   //
   // When `d = 1`, it's the unmasked case, while for `d > 1`, signing process is masked.
   template<size_t 𝑢w, size_t 𝜈w, size_t rep, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
-  inline constexpr raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len> sign(std::span<const uint8_t> msg) const
+  inline constexpr void sign(std::span<const uint8_t> msg, std::span<uint8_t, sig_byte_len> sig_bytes) const
     requires(raccoon_params::validate_sign_args(𝜅, k, l, d, 𝑢w, 𝜈w, 𝜈t, rep, 𝜔, sig_byte_len, Binf, B22))
   {
     auto s = this->s;
@@ -131,8 +131,6 @@ public:
 
     prng::prng_t prng{};
     mrng::mrng_t<d> mrng{};
-
-    raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len> sig{};
 
     while (true) {
       // Step 4: Generate masked zero vector [[r]]
@@ -188,10 +186,9 @@ public:
       auto h = w_prime.template sub_mod<(field::Q >> 𝜈w)>(y);
 
       // Step 19: Convert signature components into serialization friendly format
-      sig = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>(c_hash, h, z_prime);
+      auto sig = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>(c_hash, h, z_prime);
 
       // Step 19: Attempt to serialize signature, given fixed space
-      std::array<uint8_t, sig_byte_len> sig_bytes{};
       const bool is_encoded = sig.to_bytes(sig_bytes);
       if (!is_encoded) {
         // Signature can't be serialized within given fixed space, let's retry
@@ -208,8 +205,6 @@ public:
       // Just signed the message successfully !
       break;
     }
-
-    return sig;
   }
 
   // Byte serializes the secret key, which includes a copy of the public key.

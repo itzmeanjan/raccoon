@@ -4,7 +4,7 @@
 
 namespace raccoon_poly_vec {
 
-// A column vector of (un)masked polynomials of degree-511, defined over Zq
+// A column vector of (un)masked polynomials of degree-511, defined over Zq.
 // Only when d = 1, it's the unmasked case.
 template<size_t rows, size_t d>
   requires(d > 0)
