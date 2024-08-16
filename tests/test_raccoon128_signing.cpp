@@ -1,4 +1,5 @@
 #include "raccoon/raccoon128.hpp"
+#include "test_helper.hpp"
 #include <gtest/gtest.h>
 
 // Test Raccoon-128 "key generation -> signing -> verification" flow for random messages of given byte length.
@@ -13,11 +14,13 @@ test_raccoon128_signing(const size_t till_mlen)
   std::vector<uint8_t> sk_bytes(sk_byte_len, 0);
   std::vector<uint8_t> pk_bytes(pk_byte_len, 0);
   std::vector<uint8_t> sig_bytes(raccoon128::SIG_BYTE_LEN, 0);
+  std::vector<uint8_t> sig_bytes_copy(raccoon128::SIG_BYTE_LEN, 0);
 
   auto seed_span = std::span<uint8_t, raccoon128::SEED_BYTE_LEN>(seed);
   auto sk_bytes_span = std::span<uint8_t, sk_byte_len>(sk_bytes);
   auto pk_bytes_span = std::span<uint8_t, pk_byte_len>(pk_bytes);
   auto sig_bytes_span = std::span<uint8_t, raccoon128::SIG_BYTE_LEN>(sig_bytes);
+  auto sig_bytes_copy_span = std::span<uint8_t, raccoon128::SIG_BYTE_LEN>(sig_bytes_copy);
 
   prng::prng_t prng;
   prng.read(seed_span);
@@ -37,7 +40,10 @@ test_raccoon128_signing(const size_t till_mlen)
   // Sample a random message -> sign it using same keypair -> verify signature
   for (size_t mlen = 0; mlen <= till_mlen; mlen++) {
     std::vector<uint8_t> msg(mlen, 0);
+    std::vector<uint8_t> msg_copy(mlen, 0);
+
     auto msg_span = std::span<uint8_t>(msg);
+    auto msg_copy_span = std::span<uint8_t>(msg_copy);
 
     // Sample random message
     prng.read(msg_span);
@@ -46,10 +52,28 @@ test_raccoon128_signing(const size_t till_mlen)
     decoded_skey.refresh();
     decoded_skey.sign(msg_span, sig_bytes_span);
 
-    // Verify signature using public key
-    const bool is_verified = decoded_pkey.verify(msg_span, sig_bytes_span);
+    std::copy(msg_span.begin(), msg_span.end(), msg_copy_span.begin());
+    std::copy(sig_bytes_span.begin(), sig_bytes_span.end(), sig_bytes_copy_span.begin());
 
-    ASSERT_TRUE(is_verified);
+    random_bitflip(msg_copy_span, prng);
+    random_bitflip(sig_bytes_copy_span, prng);
+
+    // Verify signature using public key
+    const bool is_verified0 = decoded_pkey.verify(msg_span, sig_bytes_span);           // msg OK, sig OK
+    const bool is_verified1 = decoded_pkey.verify(msg_copy_span, sig_bytes_span);      // msg BAD, sig OK
+    const bool is_verified2 = decoded_pkey.verify(msg_span, sig_bytes_copy_span);      // msg OK, sig BAD
+    const bool is_verified3 = decoded_pkey.verify(msg_copy_span, sig_bytes_copy_span); // msg BAD, sig BAD
+
+    ASSERT_TRUE(is_verified0);
+    if (mlen > 0) {
+      // If message length is non-zero, random message byte must have been mutated, hence signature verification must fail.
+      ASSERT_FALSE(is_verified1);
+    } else {
+      // If we're signing empty message, no message bits were there to be mutated, hence signature verification must pass.
+      ASSERT_TRUE(is_verified1);
+    }
+    ASSERT_FALSE(is_verified2);
+    ASSERT_FALSE(is_verified3);
   }
 }
 
