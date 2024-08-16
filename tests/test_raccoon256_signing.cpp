@@ -29,16 +29,20 @@ test_raccoon256_signing(const size_t till_mlen)
   auto skey = raccoon256::raccoon256_skey_t<d>::generate(seed_span);
   auto pkey = skey.get_pkey();
 
-  // Serialize both keypair
+  // First serialize secret key and then deserialize it back
   skey.as_bytes(sk_bytes_span);
-  pkey.as_bytes(pk_bytes_span);
-
-  // Deserialize keypair
   auto decoded_skey = raccoon256::raccoon256_skey_t<d>(sk_bytes_span);
-  auto decoded_pkey = raccoon256::raccoon256_pkey_t(pk_bytes_span);
 
   // Sample a random message -> sign it using same keypair -> verify signature
   for (size_t mlen = 0; mlen <= till_mlen; mlen++) {
+    // Serialize public key and again deserialize it back
+    pkey.as_bytes(pk_bytes_span);
+    auto decoded_pkey = raccoon256::raccoon256_pkey_t(pk_bytes_span);
+
+    // Cause random bit flip in public key, effectively making it malformed
+    random_bitflip(pk_bytes_span, prng);
+    auto decoded_bad_pkey = raccoon256::raccoon256_pkey_t(pk_bytes_span);
+
     std::vector<uint8_t> msg(mlen, 0);
     std::vector<uint8_t> msg_copy(mlen, 0);
 
@@ -59,10 +63,11 @@ test_raccoon256_signing(const size_t till_mlen)
     random_bitflip(sig_bytes_copy_span, prng);
 
     // Verify signature using public key
-    const bool is_verified0 = decoded_pkey.verify(msg_span, sig_bytes_span);           // msg OK, sig OK
-    const bool is_verified1 = decoded_pkey.verify(msg_copy_span, sig_bytes_span);      // msg BAD, sig OK
-    const bool is_verified2 = decoded_pkey.verify(msg_span, sig_bytes_copy_span);      // msg OK, sig BAD
-    const bool is_verified3 = decoded_pkey.verify(msg_copy_span, sig_bytes_copy_span); // msg BAD, sig BAD
+    const bool is_verified0 = decoded_pkey.verify(msg_span, sig_bytes_span);           // msg OK, sig OK, pubkey OK
+    const bool is_verified1 = decoded_pkey.verify(msg_copy_span, sig_bytes_span);      // msg BAD, sig OK, pubkey OK
+    const bool is_verified2 = decoded_pkey.verify(msg_span, sig_bytes_copy_span);      // msg OK, sig BAD, pubkey OK
+    const bool is_verified3 = decoded_pkey.verify(msg_copy_span, sig_bytes_copy_span); // msg BAD, sig BAD, pubkey OK
+    const bool is_verified4 = decoded_bad_pkey.verify(msg_span, sig_bytes_span);       // msg OK, sig OK, pubkey BAD
 
     ASSERT_TRUE(is_verified0);
     if (mlen > 0) {
@@ -74,6 +79,7 @@ test_raccoon256_signing(const size_t till_mlen)
     }
     ASSERT_FALSE(is_verified2);
     ASSERT_FALSE(is_verified3);
+    ASSERT_FALSE(is_verified4);
   }
 }
 
