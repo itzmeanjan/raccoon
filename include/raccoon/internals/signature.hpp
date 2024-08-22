@@ -20,10 +20,10 @@ private:
 
 public:
   // Constructor(s)
-  inline constexpr sig_t() = default;
-  inline constexpr sig_t(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
-                         const raccoon_poly_vec::poly_vec_t<k, 1>& h,
-                         const raccoon_poly_vec::poly_vec_t<l, 1>& z)
+  constexpr sig_t() = default;
+  constexpr sig_t(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
+                  const raccoon_poly_vec::poly_vec_t<k, 1>& h,
+                  const raccoon_poly_vec::poly_vec_t<l, 1>& z)
   {
     // First copy byte array `c_hash`
     std::copy(c_hash.begin(), c_hash.end(), this->c_hash.begin());
@@ -46,10 +46,10 @@ public:
   }
 
   // Accessor(s)
-  inline constexpr std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> get_c_hash() const { return this->c_hash; }
-  inline constexpr std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> get_c_hash() { return this->c_hash; }
+  constexpr std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> get_c_hash() const { return this->c_hash; }
+  constexpr std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> get_c_hash() { return this->c_hash; }
 
-  inline constexpr raccoon_poly_vec::poly_vec_t<k, 1> get_h() const
+  constexpr raccoon_poly_vec::poly_vec_t<k, 1> get_h() const
   {
     constexpr uint64_t Q_prime = field::Q >> 𝜈w;
 
@@ -64,7 +64,7 @@ public:
     return h;
   }
 
-  inline constexpr raccoon_poly_vec::poly_vec_t<l, 1> get_z() const
+  constexpr raccoon_poly_vec::poly_vec_t<l, 1> get_z() const
   {
     raccoon_poly_vec::poly_vec_t<l, 1> z{};
     const auto z_span = std::span(this->z);
@@ -78,7 +78,7 @@ public:
   }
 
   // Returns byte length of the serialized signature.
-  static inline constexpr size_t get_byte_len() { return sig_byte_len; }
+  static constexpr size_t get_byte_len() { return sig_byte_len; }
 
   // Performs norm bounds check on hint vector `h` and response vector `z`, following section 2.4.4 (and algorithm 4) of the Raccoon specification.
   // If signature passes norms check, returns true, else return false.
@@ -86,7 +86,7 @@ public:
   // Though note, it doesn't implement step 1, 2 of algorithm 4; implementation begins from step 3.
   // Following implementation collects some inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-py/racc_core.py#L257-L299
   template<uint64_t Binf, uint64_t B22>
-  inline constexpr bool check_bounds()
+  constexpr bool check_bounds()
   {
     uint64_t h_inf_norm = 0;
     uint64_t h_sqr_norm = 0;
@@ -147,13 +147,13 @@ public:
   }
 
   // Byte serializes the signature, returning true in case of successful serialization, else returns false.
-  inline constexpr bool to_bytes(std::span<uint8_t, sig_byte_len> bytes) const
+  constexpr bool to_bytes(std::span<uint8_t, sig_byte_len> bytes) const
   {
     return raccoon_serialization::encode_sig<𝜅, k, l>(this->c_hash, this->h, this->z, bytes);
   }
 
   // Given a byte serialized signature, returns a valid signature object if it can be successfully decoded, else returns empty std::optional.
-  static inline constexpr std::optional<sig_t> from_bytes(std::span<const uint8_t, sig_byte_len> bytes)
+  static constexpr std::optional<sig_t> from_bytes(std::span<const uint8_t, sig_byte_len> bytes)
   {
     sig_t sig{};
 

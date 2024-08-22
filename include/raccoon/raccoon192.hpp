@@ -36,20 +36,20 @@ private:
   pk192_t pk{};
 
 public:
-  explicit inline constexpr raccoon192_pkey_t(pk192_t pk)
+  explicit constexpr raccoon192_pkey_t(pk192_t pk)
     : pk(pk){};
 
   // Given a byte array as input, deserializes it to construct a Raccoon-192 public key.
-  explicit inline constexpr raccoon192_pkey_t(std::span<const uint8_t, PKEY_BYTE_LEN> pk_bytes) { this->pk = pk192_t::from_bytes(pk_bytes); }
+  explicit constexpr raccoon192_pkey_t(std::span<const uint8_t, PKEY_BYTE_LEN> pk_bytes) { this->pk = pk192_t::from_bytes(pk_bytes); }
 
   // Given a Raccoon-192 public key object, serializes it as a byte array.
-  inline constexpr void as_bytes(std::span<uint8_t, PKEY_BYTE_LEN> pk_bytes) const { this->pk.to_bytes(pk_bytes); }
+  constexpr void as_bytes(std::span<uint8_t, PKEY_BYTE_LEN> pk_bytes) const { this->pk.to_bytes(pk_bytes); }
 
   // Raccoon-192 public key byte length.
-  static inline constexpr size_t get_byte_len() { return PKEY_BYTE_LEN; }
+  static constexpr size_t get_byte_len() { return PKEY_BYTE_LEN; }
 
   // Given a (message, signature) pair as byte arrays, verifies the validity of signature, returning boolean truth value in case of success.
-  inline constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, SIG_BYTE_LEN> sig_bytes) const
+  constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, SIG_BYTE_LEN> sig_bytes) const
   {
     return this->pk.verify<l, 𝜈w, 𝜔, sig_bytes.size(), Binf, B22>(msg, sig_bytes);
   }
@@ -64,39 +64,39 @@ private:
   sk192_t sk{};
 
 public:
-  explicit inline constexpr raccoon192_skey_t(sk192_t sk)
+  explicit constexpr raccoon192_skey_t(sk192_t sk)
     : sk(sk){};
 
   // Given a byte array as input, deserializes it to construct a Raccoon-192 secret key.
-  explicit inline constexpr raccoon192_skey_t(std::span<const uint8_t, sk192_t::get_byte_len()> sk_bytes) { this->sk = sk192_t::from_bytes(sk_bytes); }
+  explicit constexpr raccoon192_skey_t(std::span<const uint8_t, sk192_t::get_byte_len()> sk_bytes) { this->sk = sk192_t::from_bytes(sk_bytes); }
 
   // Given a Raccoon-192 secret key object, serializes it as a byte array.
-  inline constexpr void as_bytes(std::span<uint8_t, sk192_t::get_byte_len()> sk_bytes) const
+  constexpr void as_bytes(std::span<uint8_t, sk192_t::get_byte_len()> sk_bytes) const
   {
     prng::prng_t prng;
     this->sk.to_bytes(sk_bytes, prng);
   }
 
   // Raccoon-192 secret key byte length.
-  static inline constexpr size_t get_byte_len() { return sk192_t::get_byte_len(); }
+  static constexpr size_t get_byte_len() { return sk192_t::get_byte_len(); }
 
   // Generates a new Raccoon-192 keypair, given a 16 -bytes seed.
-  static inline constexpr raccoon192_skey_t generate(std::span<const uint8_t, SEED_BYTE_LEN> seed)
+  static constexpr raccoon192_skey_t generate(std::span<const uint8_t, SEED_BYTE_LEN> seed)
   {
     return raccoon192_skey_t(sk192_t::template generate<𝑢t[raccoon_utils::log2<d>()], rep[raccoon_utils::log2<d>()]>(seed));
   }
 
   // Returns a copy of the Raccoon-192 public key held inside the secret key.
-  inline constexpr raccoon192_pkey_t get_pkey() const { return raccoon192_pkey_t(this->sk.get_pkey()); }
+  constexpr raccoon192_pkey_t get_pkey() const { return raccoon192_pkey_t(this->sk.get_pkey()); }
 
   // Given a message, signs it, producing a byte serialized signature.
-  inline constexpr void sign(std::span<const uint8_t> msg, std::span<uint8_t, SIG_BYTE_LEN> sig_bytes) const
+  constexpr void sign(std::span<const uint8_t> msg, std::span<uint8_t, SIG_BYTE_LEN> sig_bytes) const
   {
     this->sk.template sign<𝑢w[raccoon_utils::log2<d>()], 𝜈w, rep[raccoon_utils::log2<d>()], 𝜔, sig_bytes.size(), Binf, B22>(msg, sig_bytes);
   }
 
   // Refresh the shares of masked secret key polynomial vector `[[s]]`
-  inline constexpr void refresh() { this->sk.refresh(); }
+  constexpr void refresh() { this->sk.refresh(); }
 };
 
 }

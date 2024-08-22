@@ -15,8 +15,8 @@ private:
   // Given a 64 -bit header and `𝜅` -bits seed as input, this routine is used for uniform sampling a polynomial s.t. each of its
   // coefficients ∈ [-2^(u-1), 2^(u-1)), following algorithm 7 of https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
   template<size_t u, size_t 𝜅>
-  static inline constexpr std::array<int64_t, raccoon_poly::N> sampleU(std::span<const uint8_t, std::numeric_limits<uint8_t>::digits> hdr,
-                                                                       std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
+  static constexpr std::array<int64_t, raccoon_poly::N> sampleU(std::span<const uint8_t, std::numeric_limits<uint8_t>::digits> hdr,
+                                                                std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
     requires(u > 0)
   {
     std::array<int64_t, raccoon_poly::N> f{};
@@ -58,17 +58,17 @@ private:
 
 public:
   // Constructor(s)
-  inline constexpr masked_poly_t() = default;
+  constexpr masked_poly_t() = default;
 
   // Accessor(s)
-  inline constexpr raccoon_poly::poly_t& operator[](const size_t idx) { return this->shares[idx]; };
-  inline constexpr const raccoon_poly::poly_t& operator[](const size_t idx) const { return this->shares[idx]; };
+  constexpr raccoon_poly::poly_t& operator[](const size_t idx) { return this->shares[idx]; };
+  constexpr const raccoon_poly::poly_t& operator[](const size_t idx) const { return this->shares[idx]; };
 
   // Number of shares for (un)masked polynomial. In case it's unmasked, returns 1, else returns > 1.
-  inline constexpr size_t num_shares() const { return d; }
+  constexpr size_t num_shares() const { return d; }
 
   // Fills each of (un)masked polynomial coefficients with same Zq value.
-  inline constexpr void fill_with(const field::zq_t v)
+  constexpr void fill_with(const field::zq_t v)
   {
     for (size_t sidx = 0; sidx < this->num_shares(); sidx++) {
       (*this)[sidx].fill_with(v);
@@ -76,7 +76,7 @@ public:
   }
 
   // Addition of two (un)masked polynomials.
-  inline constexpr masked_poly_t operator+(const masked_poly_t& rhs) const
+  constexpr masked_poly_t operator+(const masked_poly_t& rhs) const
   {
     masked_poly_t res{};
 
@@ -87,12 +87,12 @@ public:
     return res;
   }
 
-  inline constexpr void operator+=(const masked_poly_t& rhs) { *this = *this + rhs; }
+  constexpr void operator+=(const masked_poly_t& rhs) { *this = *this + rhs; }
 
   // Performs addition of two (un)masked polynomials, reducing each cofficients by a small moduli `Q_prime`, assuming coefficients of input (un)masked
   // polynomials also ∈ [0, Q_prime).
   template<uint64_t Q_prime>
-  inline constexpr masked_poly_t add_mod(const masked_poly_t& rhs) const
+  constexpr masked_poly_t add_mod(const masked_poly_t& rhs) const
   {
     masked_poly_t<d> res{};
 
@@ -104,7 +104,7 @@ public:
   }
 
   // Subtraction of one (un)masked polynomial from another one.
-  inline constexpr masked_poly_t operator-(const masked_poly_t& rhs) const
+  constexpr masked_poly_t operator-(const masked_poly_t& rhs) const
   {
     masked_poly_t res{};
 
@@ -115,12 +115,12 @@ public:
     return res;
   }
 
-  inline constexpr void operator-=(const masked_poly_t& rhs) { *this = *this - rhs; }
+  constexpr void operator-=(const masked_poly_t& rhs) { *this = *this - rhs; }
 
   // Subtracts one (un)masked polynomial from another one s.t. each of the coefficients ∈ [0, Q_prime) and resulting (un)masked polynomial coefficients are
   // reduced modulo `Q_prime`.
   template<uint64_t Q_prime>
-  inline constexpr masked_poly_t sub_mod(const masked_poly_t& rhs) const
+  constexpr masked_poly_t sub_mod(const masked_poly_t& rhs) const
   {
     masked_poly_t res{};
 
@@ -132,7 +132,7 @@ public:
   }
 
   // Multiplies two (un)masked polynomials, assuming both inputs are in their number theoretic representation. Hence the computed output is also in NTT domain.
-  inline constexpr masked_poly_t operator*(const masked_poly_t& rhs) const
+  constexpr masked_poly_t operator*(const masked_poly_t& rhs) const
   {
     masked_poly_t res{};
 
@@ -145,7 +145,7 @@ public:
 
   // Rouding shift right of (un)masked polynomial.
   template<size_t bit_offset>
-  inline constexpr void rounding_shr()
+  constexpr void rounding_shr()
   {
     for (size_t sidx = 0; sidx < this->num_shares(); sidx++) {
       (*this)[sidx].template rounding_shr<bit_offset>();
@@ -153,7 +153,7 @@ public:
   }
 
   // Shift (un)masked polynomial leftwards by `offset` (<64) many bits.
-  inline constexpr masked_poly_t operator<<(const size_t offset) const
+  constexpr masked_poly_t operator<<(const size_t offset) const
   {
     masked_poly_t res{};
 
@@ -165,7 +165,7 @@ public:
   }
 
   // [Constant-time] Checks for equality of two (un)masked polynomials.
-  inline constexpr bool operator==(const masked_poly_t<d>& rhs) const
+  constexpr bool operator==(const masked_poly_t<d>& rhs) const
   {
     bool res = true;
     for (size_t i = 0; i < rhs.num_shares(); i++) {
@@ -176,7 +176,7 @@ public:
   }
 
   // Applies Number Theoretic Transform on (un)masked polynomial.
-  inline constexpr void ntt()
+  constexpr void ntt()
   {
     for (size_t sidx = 0; sidx < this->num_shares(); sidx++) {
       (*this)[sidx].ntt();
@@ -184,7 +184,7 @@ public:
   }
 
   // Applies Inverse Number Theoretic Transform on (un)masked polynomial.
-  inline constexpr void intt()
+  constexpr void intt()
   {
     for (size_t sidx = 0; sidx < this->num_shares(); sidx++) {
       (*this)[sidx].intt();
@@ -197,7 +197,7 @@ public:
   // This routine is invoked when expanding seed for computing public matrix A.
   template<size_t 𝜅>
     requires(d == 1)
-  inline constexpr void sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
+  constexpr void sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎)
   {
     (*this)[d - 1].template sampleQ<𝜅>(hdr, 𝜎);
   }
@@ -208,7 +208,7 @@ public:
   // This is an implementation of algorithm 12 of the Raccoon specification.
   //
   // This implementation collects a lot of inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-c/racc_core.c#L71-L102
-  inline constexpr void zero_encoding(mrng::mrng_t<d>& mrng)
+  constexpr void zero_encoding(mrng::mrng_t<d>& mrng)
   {
     this->fill_with(field::zq_t::zero());
 
@@ -239,7 +239,7 @@ public:
   // Returns a fresh d -sharing of the input polynomial, using `zero_encoding` as a subroutine.
   //
   // This is an implementation of algorithm 11 of the Raccoon specification.
-  inline constexpr void refresh(mrng::mrng_t<d>& mrng)
+  constexpr void refresh(mrng::mrng_t<d>& mrng)
   {
     masked_poly_t<d> z{};
     z.zero_encoding(mrng);
@@ -250,7 +250,7 @@ public:
   // Returns the standard representation of a masked (d -sharing) polynomial.
   //
   // This is an implementation of algorithm 13 of the Raccoon specification.
-  inline constexpr masked_poly_t<1> decode()
+  constexpr masked_poly_t<1> decode()
   {
     masked_poly_t<1> collapsed_poly{};
 
@@ -266,7 +266,7 @@ public:
   //
   // Each time noise is added, polynomial is refreshed and this operation is repeated `rep` -many times.
   template<size_t u, size_t rep, size_t 𝜅>
-  inline constexpr void add_rep_noise(const size_t idx, prng::prng_t& prng, mrng::mrng_t<d>& mrng)
+  constexpr void add_rep_noise(const size_t idx, prng::prng_t& prng, mrng::mrng_t<d>& mrng)
   {
     std::array<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> 𝜎{};
 
