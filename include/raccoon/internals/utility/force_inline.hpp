@@ -11,7 +11,7 @@
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #define forceinline inline __attribute__((__always_inline__))
 #else
-#define forceinline static inline
+#define forceinline inline
 #endif
 
 #elif defined(__CLANG__)
