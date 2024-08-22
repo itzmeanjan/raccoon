@@ -340,7 +340,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
 }
 
 // Extracts n -th bit from 64 -bit word s.t. n < 64.
-static inline constexpr uint64_t
+forceinline constexpr uint64_t
 get_bit_at(const uint64_t word, const size_t idx)
 {
   return (word >> idx) & 0b1ul;
@@ -349,7 +349,7 @@ get_bit_at(const uint64_t word, const size_t idx)
 // Given a 64 -bit buffer s.t. `buf_bit_off` bits, from LSB side, are part of current active buffer, this routine tries to decode
 // a small signed integer (which is a coefficient of the hint vector `h`), from those bits, while also returning how many bits were
 // consumed during decoding.
-static inline constexpr std::pair<int64_t, size_t>
+forceinline constexpr std::pair<int64_t, size_t>
 decode_bits_as_hint_coeff(const uint64_t buffer, const size_t buf_bit_off)
 {
   int64_t res = 0;
@@ -383,7 +383,7 @@ decode_bits_as_hint_coeff(const uint64_t buffer, const size_t buf_bit_off)
 // integer `a` (i.e. low 40 -bits of the resulting coefficient), this routine tries to decode a small signed integer (which forms the
 // high bits of a coefficient of the response vector `z`), from those bits, while returning a signed integer which is ~40 -bits and
 // how many bits were consumed for decoding the high part of the coefficient.
-static inline constexpr std::pair<int64_t, size_t>
+forceinline constexpr std::pair<int64_t, size_t>
 decode_bits_as_response_coeff(const uint64_t buffer, const size_t buf_bit_off, const int64_t a)
 {
   int64_t b = 0;

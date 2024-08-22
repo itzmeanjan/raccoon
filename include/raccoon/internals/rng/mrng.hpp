@@ -23,7 +23,7 @@ public:
   //
   // Following initialization function collects inspiration from
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L81-L124
-  inline constexpr mrng_t()
+  forceinline constexpr mrng_t()
     requires(d > 1)
   {
     std::array<uint8_t, ascon80pq_aead::KEY_LEN> key;
@@ -62,14 +62,14 @@ public:
   }
 
   // Given that `d = 1`, meaning no masking is required, hence no masked random number generators are instantiated.
-  inline constexpr mrng_t()
+  forceinline constexpr mrng_t()
     requires(d == 1)
   {
   }
 
   // Returns a 64 -bit random number, following implementation @
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L126-L131
-  inline constexpr uint64_t get(const size_t idx)
+  forceinline constexpr uint64_t get(const size_t idx)
     requires(d > 1)
   {
     if (idx >= (d - 1)) {

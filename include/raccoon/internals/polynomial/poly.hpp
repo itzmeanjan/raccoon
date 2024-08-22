@@ -2,6 +2,7 @@
 #include "raccoon/internals/math/field.hpp"
 #include "raccoon/internals/rng/mrng.hpp"
 #include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/force_inline.hpp"
 #include "raccoon/internals/utility/utils.hpp"
 #include "shake256.hpp"
 #include <algorithm>
@@ -33,7 +34,7 @@ static constexpr auto INV_N = []() {
 //
 // Taken from https://github.com/itzmeanjan/kyber/blob/3cd41a5/include/ntt.hpp#L74-L93.
 template<size_t mbw>
-static inline constexpr size_t
+forceinline constexpr size_t
 bit_rev(const size_t v)
   requires(mbw == LOG2N)
 {
