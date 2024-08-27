@@ -14,18 +14,18 @@ private:
 
 public:
   // Constructor(s)
-  inline constexpr poly_mat_t() = default;
+  constexpr poly_mat_t() = default;
 
   // Accessor(s) s.t. (row_idx, col_idx) | row_idx < rows && col_idx < cols
-  inline constexpr raccoon_poly::poly_t& operator[](const std::pair<size_t, size_t> idx) { return this->elems[idx.first * cols + idx.second]; }
-  inline constexpr const raccoon_poly::poly_t& operator[](const std::pair<size_t, size_t> idx) const { return this->elems[idx.first * cols + idx.second]; }
+  constexpr raccoon_poly::poly_t& operator[](const std::pair<size_t, size_t> idx) { return this->elems[idx.first * cols + idx.second]; }
+  constexpr const raccoon_poly::poly_t& operator[](const std::pair<size_t, size_t> idx) const { return this->elems[idx.first * cols + idx.second]; }
 
-  inline constexpr size_t num_rows() const { return rows; }
-  inline constexpr size_t num_cols() const { return cols; }
+  constexpr size_t num_rows() const { return rows; }
+  constexpr size_t num_cols() const { return cols; }
 
   // Multiply a matrix by another vector of compatible dimension, assuming both of them are in their NTT representation.
   template<size_t d>
-  inline constexpr raccoon_poly_vec::poly_vec_t<rows, d> operator*(const raccoon_poly_vec::poly_vec_t<cols, d>& rhs) const
+  constexpr raccoon_poly_vec::poly_vec_t<rows, d> operator*(const raccoon_poly_vec::poly_vec_t<cols, d>& rhs) const
   {
     raccoon_poly_vec::poly_vec_t<rows, d> res{};
 
@@ -43,7 +43,7 @@ public:
   // Given `𝜅` -bits seed as input, this routine is used for generating public matrix A, following algorithm 6 of
   // https://raccoonfamily.org/wp-content/uploads/2023/07/raccoon.pdf.
   template<size_t k, size_t l, size_t 𝜅>
-  static inline constexpr poly_mat_t<k, l> expandA(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed)
+  static constexpr poly_mat_t<k, l> expandA(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed)
   {
     poly_mat_t<k, l> A{};
 

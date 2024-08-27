@@ -1,5 +1,6 @@
 #pragma once
 #include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/force_inline.hpp"
 #include "u128.hpp"
 #include <cstdint>
 #include <limits>
@@ -34,7 +35,7 @@ private:
   // Given a 64 -bit unsigned integer `v` such that `v` ∈ [0, 2*Q), this routine can be invoked for reducing `v` modulo Q.
   //
   // Collects inspiration from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L239-L249
-  static inline constexpr uint64_t reduce_once(const uint64_t v)
+  static forceinline constexpr uint64_t reduce_once(const uint64_t v)
   {
     const auto t = v - Q;
     const auto mask = -(t >> 63);
@@ -50,7 +51,7 @@ private:
   //
   // See https://www.nayuki.io/page/barrett-reduction-algorithm for Barrett reduction algorithm
   // Collects inspiration from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/field.hpp#L73-L134
-  static inline constexpr uint64_t barrett_reduce(const u128::u128_t v)
+  static forceinline constexpr uint64_t barrett_reduce(const u128::u128_t v)
   {
     // Input `v` which is to be reduced, has 98 -bits of significance, from LSB side.
     // Multiply 98 -bit `v` with 50 -bit R, producing 148 -bit `res`, represented as two 128 -bit words.
@@ -87,7 +88,7 @@ private:
   // Extended GCD algorithm, finding a solution for `ax + by = g` s.t. x, y are provided as input, used for computing multiplicative inverse over field Zq.
   //
   // Collects inspiration from https://github.com/itzmeanjan/falcon/blob/cce934dcd092c95808c0bdaeb034312ee7754d7e/include/ff.hpp#L25-L60.
-  static inline constexpr std::tuple<int64_t, int64_t, int64_t> xgcd(const uint64_t x, const uint64_t y)
+  static forceinline constexpr std::tuple<int64_t, int64_t, int64_t> xgcd(const uint64_t x, const uint64_t y)
   {
     int64_t old_a = 1, a = 0;
     int64_t old_b = 0, b = 1;
@@ -114,34 +115,34 @@ private:
   }
 
 public:
-  inline constexpr zq_t() = default;
-  inline constexpr zq_t(const uint64_t v) { this->v = v; }
+  forceinline constexpr zq_t() = default;
+  forceinline constexpr zq_t(const uint64_t v) { this->v = v; }
 
-  static inline constexpr zq_t zero() { return zq_t(0); }
-  static inline constexpr zq_t one() { return zq_t(1); }
+  static forceinline constexpr zq_t zero() { return zq_t(0); }
+  static forceinline constexpr zq_t one() { return zq_t(1); }
 
   // Modulo addition over field Zq
-  inline constexpr zq_t operator+(const zq_t rhs) const { return reduce_once(this->v + rhs.v); }
-  inline constexpr void operator+=(const zq_t rhs) { *this = *this + rhs; }
+  forceinline constexpr zq_t operator+(const zq_t rhs) const { return reduce_once(this->v + rhs.v); }
+  forceinline constexpr void operator+=(const zq_t rhs) { *this = *this + rhs; }
 
   // Modulo negation/ subtraction over field Zq
-  inline constexpr zq_t operator-() const { return Q - this->v; }
-  inline constexpr zq_t operator-(const zq_t rhs) const { return *this + (-rhs); }
-  inline constexpr void operator-=(const zq_t rhs) { *this = *this - rhs; }
+  forceinline constexpr zq_t operator-() const { return Q - this->v; }
+  forceinline constexpr zq_t operator-(const zq_t rhs) const { return *this + (-rhs); }
+  forceinline constexpr void operator-=(const zq_t rhs) { *this = *this - rhs; }
 
   // Modulo multiplication over field Zq
-  inline constexpr zq_t operator*(const zq_t rhs) const { return barrett_reduce(u128::u128_t::from(this->v) * u128::u128_t::from(rhs.v)); }
-  inline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
+  forceinline constexpr zq_t operator*(const zq_t rhs) const { return barrett_reduce(u128::u128_t::from(this->v) * u128::u128_t::from(rhs.v)); }
+  forceinline constexpr void operator*=(const zq_t rhs) { *this = *this * rhs; }
 
   // Shift operand rightwards by `offset` many bits, ensuring that `offset < 64`.
-  inline constexpr zq_t operator>>(const size_t offset) const { return static_cast<uint64_t>(this->v >> offset); }
+  forceinline constexpr zq_t operator>>(const size_t offset) const { return static_cast<uint64_t>(this->v >> offset); }
 
   // Shift operand leftwards by `offset` many bits s.t. returned value ∈ Zq.
   // Ensure that `offset < 64`.
-  inline constexpr zq_t operator<<(const size_t offset) const { return barrett_reduce(u128::u128_t::from(this->v << offset)); }
+  forceinline constexpr zq_t operator<<(const size_t offset) const { return barrett_reduce(u128::u128_t::from(this->v << offset)); }
 
   // Multiplicative inverse over field Zq
-  inline constexpr std::pair<zq_t, is_invertible_t> inv() const
+  forceinline constexpr std::pair<zq_t, is_invertible_t> inv() const
   {
     if (this->v == 0) {
       return { 0, is_invertible_t::no };
@@ -160,14 +161,14 @@ public:
 
     return { static_cast<uint64_t>(a), is_invertible_t::yes };
   }
-  inline constexpr std::pair<zq_t, is_invertible_t> operator/(const zq_t rhs) const
+  forceinline constexpr std::pair<zq_t, is_invertible_t> operator/(const zq_t rhs) const
   {
     const auto rhs_inv = rhs.inv();
     return { *this * rhs_inv.first, rhs_inv.second };
   }
 
   // Modulo exponentiation over field Zq
-  inline constexpr zq_t operator^(const size_t n) const
+  forceinline constexpr zq_t operator^(const size_t n) const
   {
     zq_t base = *this;
 
@@ -188,10 +189,10 @@ public:
   }
 
   // Comparison operators, see https://en.cppreference.com/w/cpp/language/default_comparisons
-  inline constexpr auto operator<=>(const zq_t&) const = default;
+  forceinline constexpr auto operator<=>(const zq_t&) const = default;
 
   // Generates a random Zq element
-  static inline zq_t random(prng::prng_t& prng)
+  static forceinline zq_t random(prng::prng_t& prng)
   {
     uint64_t v = 0;
     prng.read(std::span(reinterpret_cast<uint8_t*>(&v), sizeof(v)));
@@ -200,7 +201,7 @@ public:
   }
 
   // Returns the underlying value held in canonical form.
-  inline constexpr uint64_t raw() const { return this->v; }
+  forceinline constexpr uint64_t raw() const { return this->v; }
 };
 
 }

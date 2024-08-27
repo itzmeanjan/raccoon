@@ -1,4 +1,5 @@
 #pragma once
+#include "raccoon/internals/utility/force_inline.hpp"
 #include <cstdint>
 #include <utility>
 
@@ -6,7 +7,7 @@ namespace u64 {
 
 // Given two unsigned 64 -bit operands, this function computes a full 128 -bit multiplication result such that return value
 // keeps result like (high 64 -bits, low 64 -bits).
-static inline constexpr std::pair<uint64_t, uint64_t>
+forceinline constexpr std::pair<uint64_t, uint64_t>
 mul_full_u64(const uint64_t lhs, const uint64_t rhs)
 {
 #ifdef __SIZEOF_INT128__

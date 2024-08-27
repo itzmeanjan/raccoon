@@ -8,7 +8,7 @@ namespace raccoon_challenge {
 // Computes `2 * 𝜅` -bit digest of the commitment vector `w` and message, to be signed, hash 𝜇 (which is bound to the public key),
 // following algorithm 9 of the Raccoon specification.
 template<size_t k, size_t 𝜅>
-static inline constexpr void
+constexpr void
 chal_hash(const raccoon_poly_vec::poly_vec_t<k, 1>& w,
           std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> 𝜇,
           std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)

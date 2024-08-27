@@ -1,8 +1,9 @@
 #pragma once
 #include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/force_inline.hpp"
 
 // Given an arbitrary byte length data as input, this function flips a random bit of it, while sampling choice of random index from input PRNG.
-static inline constexpr void
+forceinline constexpr void
 random_bitflip(std::span<uint8_t> data, prng::prng_t& prng)
 {
   if (data.empty()) {

@@ -21,25 +21,25 @@ private:
 
 public:
   // Constructor(s)
-  inline constexpr skey_t() = default;
-  inline constexpr skey_t(const raccoon_pkey::pkey_t<𝜅, k, 𝜈t>& pkey, const raccoon_poly_vec::poly_vec_t<l, d>& s)
+  constexpr skey_t() = default;
+  constexpr skey_t(const raccoon_pkey::pkey_t<𝜅, k, 𝜈t>& pkey, const raccoon_poly_vec::poly_vec_t<l, d>& s)
   {
     this->pkey = pkey;
     this->s = s;
   }
 
   // Accessor(s)
-  inline constexpr const raccoon_pkey::pkey_t<𝜅, k, 𝜈t>& get_pkey() const { return this->pkey; }
-  inline constexpr raccoon_pkey::pkey_t<𝜅, k, 𝜈t>& get_pkey() { return this->pkey; }
+  constexpr const raccoon_pkey::pkey_t<𝜅, k, 𝜈t>& get_pkey() const { return this->pkey; }
+  constexpr raccoon_pkey::pkey_t<𝜅, k, 𝜈t>& get_pkey() { return this->pkey; }
 
-  inline constexpr const raccoon_poly_vec::poly_vec_t<l, d>& get_s() const { return this->s; }
-  inline constexpr raccoon_poly_vec::poly_vec_t<l, d>& get_s() { return this->s; }
+  constexpr const raccoon_poly_vec::poly_vec_t<l, d>& get_s() const { return this->s; }
+  constexpr raccoon_poly_vec::poly_vec_t<l, d>& get_s() { return this->s; }
 
   // Returns byte length of the serialized secret key.
-  static inline constexpr size_t get_byte_len() { return raccoon_utils::get_skey_byte_len<𝜅, k, l, d, raccoon_poly::N, 𝜈t>(); }
+  static constexpr size_t get_byte_len() { return raccoon_utils::get_skey_byte_len<𝜅, k, l, d, raccoon_poly::N, 𝜈t>(); }
 
   // [Constant-time] Checks for equality of two secret keys.
-  inline constexpr bool operator==(const skey_t& rhs) const
+  constexpr bool operator==(const skey_t& rhs) const
   {
     bool res = true;
 
@@ -50,7 +50,7 @@ public:
   }
 
   // Refresh the shares of masked secret key polynomial vector `[[s]]`
-  inline constexpr void refresh()
+  constexpr void refresh()
   {
     mrng::mrng_t<d> mrng{};
     this->s.refresh(mrng);
@@ -60,7 +60,7 @@ public:
   //
   // When `d = 1`, it's the unmasked case, while for `d > 1`, key generation process is masked.
   template<size_t 𝑢t, size_t rep>
-  static inline constexpr skey_t generate(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed)
+  static constexpr skey_t generate(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed)
     requires(raccoon_params::validate_keygen_args(𝜅, k, l, d, 𝑢t, 𝜈t, rep))
   {
     prng::prng_t prng{};
@@ -99,7 +99,7 @@ public:
   //
   // When `d = 1`, it's the unmasked case, while for `d > 1`, signing process is masked.
   template<size_t 𝑢w, size_t 𝜈w, size_t rep, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
-  inline constexpr void sign(std::span<const uint8_t> msg, std::span<uint8_t, sig_byte_len> sig_bytes) const
+  constexpr void sign(std::span<const uint8_t> msg, std::span<uint8_t, sig_byte_len> sig_bytes) const
     requires(raccoon_params::validate_sign_args(𝜅, k, l, d, 𝑢w, 𝜈w, 𝜈t, rep, 𝜔, sig_byte_len, Binf, B22))
   {
     auto s = this->s;
@@ -208,7 +208,7 @@ public:
   }
 
   // Byte serializes the secret key, which includes a copy of the public key.
-  inline constexpr void to_bytes(std::span<uint8_t, get_byte_len()> bytes, prng::prng_t& prng) const
+  constexpr void to_bytes(std::span<uint8_t, get_byte_len()> bytes, prng::prng_t& prng) const
   {
     constexpr size_t pklen = raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>();
     constexpr size_t skoff0 = 0;
@@ -220,7 +220,7 @@ public:
   }
 
   // Given a byte serialized secret key, this routine helps in deserializing it, producing components ((seed, t), [[s]]).
-  static inline constexpr skey_t from_bytes(std::span<const uint8_t, get_byte_len()> bytes)
+  static constexpr skey_t from_bytes(std::span<const uint8_t, get_byte_len()> bytes)
   {
     constexpr size_t pklen = raccoon_pkey::pkey_t<𝜅, k, 𝜈t>::get_byte_len();
     constexpr size_t skoff0 = 0;

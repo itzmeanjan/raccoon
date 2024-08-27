@@ -9,7 +9,7 @@ namespace raccoon_serialization {
 
 // Given a public key of form (seed, t), this routine helps in serializing it, producing a byte array.
 template<size_t 𝜅, size_t k, size_t 𝜈t>
-static inline constexpr void
+constexpr void
 encode_public_key(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed,
                   const raccoon_poly_vec::poly_vec_t<k, 1>& t,
                   std::span<uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>()> pkey)
@@ -60,7 +60,7 @@ encode_public_key(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::
 
 // Given a serialized public key, thir routine helps in deserializing it, producing (seed, t).
 template<size_t 𝜅, size_t k, size_t 𝜈t>
-static inline constexpr void
+constexpr void
 decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>()> pkey,
                   std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed,
                   raccoon_poly_vec::poly_vec_t<k, 1>& t)
@@ -99,7 +99,7 @@ decode_public_key(std::span<const uint8_t, raccoon_utils::get_pkey_byte_len<𝜅
 
 // Serializes masked (d -sharing) NTT domain secret key vector `[[s]]` as bytes, following algorithm 14 of Raccoon specification.
 template<size_t 𝜅, size_t l, size_t d>
-static inline constexpr void
+constexpr void
 mask_compress(const raccoon_poly_vec::poly_vec_t<l, d>& s,
               std::span<uint8_t, ((d - 1) * 𝜅 + l * raccoon_poly::N * field::Q_BIT_WIDTH) / std::numeric_limits<uint8_t>::digits> s_c,
               prng::prng_t& prng)
@@ -159,7 +159,7 @@ mask_compress(const raccoon_poly_vec::poly_vec_t<l, d>& s,
 
 // Deserializes bytes into masked (d -sharing) NTT domain secret key vector `[[s]]`, following algorithm 15 of Raccoon specification.
 template<size_t 𝜅, size_t l, size_t d>
-static inline constexpr raccoon_poly_vec::poly_vec_t<l, d>
+constexpr raccoon_poly_vec::poly_vec_t<l, d>
 mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * raccoon_poly::N * field::Q_BIT_WIDTH) / 8> s_c)
 {
   raccoon_poly_vec::poly_vec_t<l, d> s{};
@@ -207,7 +207,7 @@ mask_decompress(std::span<const uint8_t, ((d - 1) * 𝜅 + l * raccoon_poly::N *
 // In case signature can *not* be encoded into fixed byte length `sig_byte_len`, it returns false, otherwise
 // (i.e. in case of successful signature encoding ) it returns true.
 template<size_t 𝜅, size_t k, size_t l, size_t sig_byte_len>
-static inline constexpr bool
+constexpr bool
 encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
            std::span<const int64_t, k * raccoon_poly::N> h,
            std::span<const int64_t, l * raccoon_poly::N> z,
@@ -340,7 +340,7 @@ encode_sig(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::d
 }
 
 // Extracts n -th bit from 64 -bit word s.t. n < 64.
-static inline constexpr uint64_t
+forceinline constexpr uint64_t
 get_bit_at(const uint64_t word, const size_t idx)
 {
   return (word >> idx) & 0b1ul;
@@ -349,7 +349,7 @@ get_bit_at(const uint64_t word, const size_t idx)
 // Given a 64 -bit buffer s.t. `buf_bit_off` bits, from LSB side, are part of current active buffer, this routine tries to decode
 // a small signed integer (which is a coefficient of the hint vector `h`), from those bits, while also returning how many bits were
 // consumed during decoding.
-static inline constexpr std::pair<int64_t, size_t>
+forceinline constexpr std::pair<int64_t, size_t>
 decode_bits_as_hint_coeff(const uint64_t buffer, const size_t buf_bit_off)
 {
   int64_t res = 0;
@@ -383,7 +383,7 @@ decode_bits_as_hint_coeff(const uint64_t buffer, const size_t buf_bit_off)
 // integer `a` (i.e. low 40 -bits of the resulting coefficient), this routine tries to decode a small signed integer (which forms the
 // high bits of a coefficient of the response vector `z`), from those bits, while returning a signed integer which is ~40 -bits and
 // how many bits were consumed for decoding the high part of the coefficient.
-static inline constexpr std::pair<int64_t, size_t>
+forceinline constexpr std::pair<int64_t, size_t>
 decode_bits_as_response_coeff(const uint64_t buffer, const size_t buf_bit_off, const int64_t a)
 {
   int64_t b = 0;
@@ -418,7 +418,7 @@ decode_bits_as_response_coeff(const uint64_t buffer, const size_t buf_bit_off, c
 //
 // In case signature decoding fails, it returns false, else it returns true.
 template<size_t 𝜅, size_t k, size_t l, size_t sig_byte_len>
-static inline constexpr bool
+constexpr bool
 decode_sig(std::span<const uint8_t, sig_byte_len> sig,
            std::span<uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash,
            std::span<int64_t, k * raccoon_poly::N> h,

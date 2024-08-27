@@ -15,7 +15,7 @@ namespace raccoon_utils {
 // Given a byte array of length n (>=0), this routine copies input bytes into destination word, of unsigned type T,
 // while placing bytes following little-endian ordering.
 template<typename T>
-static inline constexpr T
+forceinline constexpr T
 from_le_bytes(std::span<const uint8_t> bytes)
   requires(std::is_unsigned_v<T> && (std::endian::native == std::endian::little))
 {
@@ -31,7 +31,7 @@ from_le_bytes(std::span<const uint8_t> bytes)
 
 // Given an unsigned integer as input, this routine copies source bytes, following little-endian order, into destination
 // byte array of length n (>=0).
-static inline constexpr void
+forceinline constexpr void
 to_le_bytes(const std::unsigned_integral auto v, std::span<uint8_t> bytes)
   requires(std::endian::native == std::endian::little)
 {
@@ -43,7 +43,7 @@ to_le_bytes(const std::unsigned_integral auto v, std::span<uint8_t> bytes)
 
 // Given an unsigned integer as input, this routine returns TRUTH value only if `v` is power of 2, otherwise it returns FALSE.
 template<typename T>
-static inline constexpr bool
+forceinline constexpr bool
 is_power_of_2(const T v)
   requires(std::is_unsigned_v<T>)
 {
@@ -52,7 +52,7 @@ is_power_of_2(const T v)
 
 // Given a power of 2 value `v`, this routine returns logarithm base-2 of v.
 template<size_t v>
-static inline constexpr size_t
+forceinline constexpr size_t
 log2()
   requires((v > 0) && is_power_of_2<decltype(v)>(v))
 {
@@ -61,7 +61,7 @@ log2()
 
 // Compile-time compute Raccoon public key byte length.
 template<size_t 𝜅, size_t k, size_t n, size_t 𝜈t>
-static inline constexpr size_t
+forceinline constexpr size_t
 get_pkey_byte_len()
 {
   return (𝜅 + k * n * (field::Q_BIT_WIDTH - 𝜈t)) / 8;
@@ -69,7 +69,7 @@ get_pkey_byte_len()
 
 // Compile-time compute d -sharing Raccoon secret key byte length.
 template<size_t 𝜅, size_t k, size_t l, size_t d, size_t n, size_t 𝜈t>
-static inline constexpr size_t
+forceinline constexpr size_t
 get_skey_byte_len()
   requires(d > 0)
 {
@@ -80,7 +80,7 @@ get_skey_byte_len()
 // If a == b, it returns a 32 -bit unsigned integer s.t. all of its bits are set to 1.
 // Else, it returns 32 -bit unsigned integer s.t. all of its bits are set to 0.
 template<size_t len>
-static inline constexpr uint32_t
+forceinline constexpr uint32_t
 ct_eq_byte_array(std::span<const uint8_t, len> a, std::span<const uint8_t, len> b)
 {
   uint32_t res = std::numeric_limits<uint32_t>::max();

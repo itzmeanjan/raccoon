@@ -5,7 +5,7 @@ namespace raccoon_params {
 
 // Validate (preferrably at compile-time) input arguments of Raccoon key generation algorithm
 // to ensure that only values from Table {2, 3, 4} of the Raccoon specification are allowed.
-static inline constexpr bool
+consteval bool
 validate_keygen_args(const size_t 𝜅, const size_t k, const size_t l, const size_t d, const size_t 𝑢t, const size_t 𝜈t, const size_t rep)
 {
   const auto is_d_valid = (d > 0) && raccoon_utils::is_power_of_2(d) && (d <= 32);
@@ -106,7 +106,7 @@ validate_keygen_args(const size_t 𝜅, const size_t k, const size_t l, const si
 
 // Validate (preferrably at compile-time) input arguments of Raccoon signing algorithm to ensure that
 // only values from Table {2, 3, 4} of the Raccoon specification are allowed.
-static inline constexpr bool
+consteval bool
 validate_sign_args(const size_t 𝜅,
                    const size_t k,
                    const size_t l,
@@ -173,7 +173,7 @@ validate_sign_args(const size_t 𝜅,
 
 // Validate (preferrably at compile-time) input arguments of Raccoon signing algorithm to ensure that
 // only values from Table {2, 3, 4} of the Raccoon specification are allowed.
-static inline constexpr bool
+consteval bool
 validate_verify_args(const size_t 𝜅,
                      const size_t k,
                      const size_t l,

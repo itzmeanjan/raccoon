@@ -1,4 +1,5 @@
 #pragma once
+#include "raccoon/internals/utility/force_inline.hpp"
 #include "shake128.hpp"
 #include <array>
 #include <random>
@@ -29,7 +30,7 @@ private:
   shake128::shake128_t state;
 
 public:
-  inline prng_t()
+  forceinline prng_t()
   {
     std::array<uint8_t, 32> seed{};
     auto _seed = std::span(seed);
@@ -49,13 +50,13 @@ public:
     state.finalize();
   }
 
-  inline explicit constexpr prng_t(std::span<const uint8_t> seed)
+  forceinline explicit constexpr prng_t(std::span<const uint8_t> seed)
   {
     state.absorb(seed);
     state.finalize();
   }
 
-  inline void constexpr read(std::span<uint8_t> bytes) { state.squeeze(bytes); }
+  forceinline void constexpr read(std::span<uint8_t> bytes) { state.squeeze(bytes); }
 };
 
 }

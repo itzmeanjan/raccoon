@@ -2,6 +2,7 @@
 #include "raccoon/internals/math/field.hpp"
 #include "raccoon/internals/rng/mrng.hpp"
 #include "raccoon/internals/rng/prng.hpp"
+#include "raccoon/internals/utility/force_inline.hpp"
 #include "raccoon/internals/utility/utils.hpp"
 #include "shake256.hpp"
 #include <algorithm>
@@ -33,7 +34,7 @@ static constexpr auto INV_N = []() {
 //
 // Taken from https://github.com/itzmeanjan/kyber/blob/3cd41a5/include/ntt.hpp#L74-L93.
 template<size_t mbw>
-static inline constexpr size_t
+forceinline constexpr size_t
 bit_rev(const size_t v)
   requires(mbw == LOG2N)
 {
@@ -107,7 +108,7 @@ private:
 
   // Reduces input `x` modulo `q`, s.t. `x` ∈ [0, 2*q).
   template<uint64_t q>
-  static inline constexpr uint64_t reduce_once_mod(const uint64_t x)
+  static constexpr uint64_t reduce_once_mod(const uint64_t x)
   {
     const auto t = x - q;
     const auto mask = -(t >> 63);
@@ -119,20 +120,20 @@ private:
 
 public:
   // Constructor(s)
-  inline constexpr poly_t() = default;
+  constexpr poly_t() = default;
 
   // Accessor(s)
-  inline constexpr field::zq_t& operator[](const size_t idx) { return this->coeffs[idx]; }
-  inline constexpr const field::zq_t& operator[](const size_t idx) const { return this->coeffs[idx]; }
+  constexpr field::zq_t& operator[](const size_t idx) { return this->coeffs[idx]; }
+  constexpr const field::zq_t& operator[](const size_t idx) const { return this->coeffs[idx]; }
 
   // Number of coefficients in polynomial.
-  inline constexpr size_t num_coeffs() const { return N; }
+  constexpr size_t num_coeffs() const { return N; }
 
   // Sets all coefficients of the polynomial with same value.
-  inline constexpr void fill_with(const field::zq_t v) { std::fill(this->coeffs.begin(), this->coeffs.end(), v); }
+  constexpr void fill_with(const field::zq_t v) { std::fill(this->coeffs.begin(), this->coeffs.end(), v); }
 
   // Addition of two polynomials.
-  inline constexpr poly_t operator+(const poly_t& rhs) const
+  constexpr poly_t operator+(const poly_t& rhs) const
   {
     poly_t res{};
 
@@ -149,11 +150,11 @@ public:
     return res;
   }
 
-  inline constexpr void operator+=(const poly_t& rhs) { *this = *this + rhs; }
+  constexpr void operator+=(const poly_t& rhs) { *this = *this + rhs; }
 
   // Performs addition of two polynomials, reducing each cofficients by a small moduli `Q_prime` s.t. coefficients of input polynomials also ∈ [0, Q_prime).
   template<uint64_t Q_prime>
-  inline constexpr poly_t add_mod(const poly_t& rhs) const
+  constexpr poly_t add_mod(const poly_t& rhs) const
   {
     poly_t res{};
 
@@ -171,7 +172,7 @@ public:
   }
 
   // Subtraction of one polynomial from another one.
-  inline constexpr poly_t operator-(const poly_t& rhs) const
+  constexpr poly_t operator-(const poly_t& rhs) const
   {
     poly_t res{};
 
@@ -188,11 +189,11 @@ public:
     return res;
   }
 
-  inline constexpr void operator-=(const poly_t& rhs) { *this = *this - rhs; }
+  constexpr void operator-=(const poly_t& rhs) { *this = *this - rhs; }
 
   // Subtracts one polynomial from another s.t. each of the coefficients ∈ [0, Q_prime) and resulting polynomial coefficients are reduced modulo `Q_prime`.
   template<uint64_t Q_prime>
-  inline constexpr poly_t sub_mod(const poly_t& rhs) const
+  constexpr poly_t sub_mod(const poly_t& rhs) const
   {
     poly_t res{};
 
@@ -208,7 +209,7 @@ public:
   }
 
   // Multiplies two polynomials, expecting both inputs are in their number theoretic representation.
-  inline constexpr poly_t operator*(const poly_t& rhs) const
+  constexpr poly_t operator*(const poly_t& rhs) const
   {
     poly_t res{};
 
@@ -227,7 +228,7 @@ public:
 
   // Rounding shift right of each coefficient of the polynomial, following `Programming note` section on top of page 12 of Raccoon specification.
   template<size_t bit_offset>
-  inline constexpr void rounding_shr()
+  constexpr void rounding_shr()
   {
     constexpr uint64_t Q_prime = field::Q >> bit_offset;
     constexpr uint64_t rounding = 1ul << (bit_offset - 1);
@@ -243,7 +244,7 @@ public:
   }
 
   // Shift each coefficient of polynomial leftwards by `offset` (<64) many bits s.t. resulting coefficients ∈ Zq.
-  inline constexpr poly_t operator<<(const size_t offset) const
+  constexpr poly_t operator<<(const size_t offset) const
   {
     poly_t res{};
 
@@ -259,7 +260,7 @@ public:
   }
 
   // [Constant-time] Checks for equality of two polynomials.
-  inline constexpr bool operator==(const poly_t& rhs) const
+  constexpr bool operator==(const poly_t& rhs) const
   {
     bool res = true;
     for (size_t i = 0; i < rhs.num_coeffs(); i++) {
@@ -272,7 +273,7 @@ public:
   // Centers the coefficients of a polynomial around 0, given that they ∈ [0, Q_prime] and resulting polynomial coeffiecients will be signed s.t. ∈ [-Q_prime/2,
   // Q_prime/2). Collects inspiration from https://github.com/masksign/raccoon/blob/e789b4b7/ref-c/polyr.c#L159-L172.
   template<uint64_t Q_prime>
-  inline constexpr std::array<int64_t, N> center() const
+  constexpr std::array<int64_t, N> center() const
   {
     constexpr auto Q_prime_by_2 = Q_prime / 2;
     std::array<int64_t, N> centered_poly{};
@@ -301,7 +302,7 @@ public:
   // Extends the coefficients of a polynomial in [0, Q_prime), given that input coefficients are currently centered around 0
   // i.e. they ∈ [-Q_prime/2, Q_prime/2).
   template<uint64_t Q_prime>
-  static inline constexpr poly_t from_centered(std::span<const int64_t, N> centered)
+  static constexpr poly_t from_centered(std::span<const int64_t, N> centered)
   {
     poly_t extended{};
 
@@ -320,7 +321,7 @@ public:
   //
   // Note, this routine mutates input i.e. it's an in-place NTT implementation.
   // Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
-  inline constexpr void ntt()
+  constexpr void ntt()
   {
 #if (not defined __clang__) && (defined __GNUG__)
 #pragma GCC unroll 9
@@ -352,7 +353,7 @@ public:
   //
   // Note, this routine mutates input i.e. it's an in-place iNTT implementation. Also it expects the input polynomial to have coefficients placed in
   // bit-reversed order. Implementation inspired from https://github.com/itzmeanjan/dilithium/blob/609700fa83372d1b8f1543d0d7cb38785bee7975/include/ntt.hpp
-  inline constexpr void intt()
+  constexpr void intt()
   {
 #if (not defined __clang__) && (defined __GNUG__)
 #pragma GCC unroll 9
@@ -395,7 +396,7 @@ public:
   //
   // This routine is invoked when expanding seed for computing matrix A.
   template<size_t 𝜅>
-  static inline constexpr poly_t sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
+  static constexpr poly_t sampleQ(std::span<const uint8_t, 8> hdr, std::span<const uint8_t, 𝜅 / 8> 𝜎)
   {
     shake256::shake256_t xof{};
     xof.absorb(hdr);
@@ -439,7 +440,7 @@ public:
   // Uniform random sampling of degree n-1 polynomial using a Masked Random Number Generator, following implementation @
   // https://github.com/masksign/raccoon/blob/e789b4b72a2b7e8a2205df49c487736985fc8417/ref-c/mask_random.c#L133-L154
   template<size_t d>
-  static inline constexpr poly_t sample_polynomial(const size_t idx, mrng::mrng_t<d>& mrng)
+  static constexpr poly_t sample_polynomial(const size_t idx, mrng::mrng_t<d>& mrng)
     requires(d > 1)
   {
     poly_t res{};
@@ -467,7 +468,7 @@ public:
   // Expands a `2 * 𝜅` -bit challenge hash into a polynomial such that exactly `𝜔` -many of coefficients are set to +1/ -1,
   // while others are set to 0, following algorithm 10 of the Raccoon specification.
   template<size_t 𝜅, size_t 𝜔>
-  static inline constexpr poly_t chal_poly(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)
+  static constexpr poly_t chal_poly(std::span<const uint8_t, (2 * 𝜅) / std::numeric_limits<uint8_t>::digits> c_hash)
   {
     shake256::shake256_t xof{};
 
@@ -500,7 +501,7 @@ public:
   }
 
   // Generate a random degree 511 polynomial.
-  static inline constexpr poly_t random(prng::prng_t& prng)
+  static constexpr poly_t random(prng::prng_t& prng)
   {
     poly_t res{};
 

@@ -22,25 +22,25 @@ private:
 
 public:
   // Constructor(s)
-  inline constexpr pkey_t() = default;
-  inline constexpr pkey_t(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed, const raccoon_poly_vec::poly_vec_t<k, 1>& t)
+  constexpr pkey_t() = default;
+  constexpr pkey_t(std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> seed, const raccoon_poly_vec::poly_vec_t<k, 1>& t)
   {
     std::copy(seed.begin(), seed.end(), this->seed.begin());
     this->t = t;
   }
 
   // Accessor(s)
-  inline constexpr std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed() const { return this->seed; }
-  inline constexpr std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed() { return this->seed; }
+  constexpr std::span<const uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed() const { return this->seed; }
+  constexpr std::span<uint8_t, 𝜅 / std::numeric_limits<uint8_t>::digits> get_seed() { return this->seed; }
 
-  inline constexpr const raccoon_poly_vec::poly_vec_t<k, 1>& get_t() const { return this->t; }
-  inline constexpr raccoon_poly_vec::poly_vec_t<k, 1>& get_t() { return this->t; }
+  constexpr const raccoon_poly_vec::poly_vec_t<k, 1>& get_t() const { return this->t; }
+  constexpr raccoon_poly_vec::poly_vec_t<k, 1>& get_t() { return this->t; }
 
   // Returns byte length of the serialized public key.
-  static inline constexpr size_t get_byte_len() { return raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>(); }
+  static constexpr size_t get_byte_len() { return raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>(); }
 
   // [Constant-time] Checks for equality of two public keys.
-  inline constexpr bool operator==(const pkey_t& rhs) const
+  constexpr bool operator==(const pkey_t& rhs) const
   {
     bool res = true;
 
@@ -56,7 +56,7 @@ public:
   // this routine verifies the validity of the signature, returning boolean truth value in case of success, else returning false. This is an implementation of
   // the algorithm 3 of the specification.
   template<size_t l, size_t 𝜈w, size_t 𝜔, size_t sig_byte_len, uint64_t Binf, uint64_t B22>
-  inline constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, sig_byte_len> sig) const
+  constexpr bool verify(std::span<const uint8_t> msg, std::span<const uint8_t, sig_byte_len> sig) const
   {
     // Step 1: Attempt to decode signature into its components
     auto sig_opt = raccoon_sig::sig_t<𝜅, k, l, 𝜈w, sig_byte_len>::from_bytes(sig);
@@ -132,13 +132,10 @@ public:
   }
 
   // Byte serializes the public key.
-  inline constexpr void to_bytes(std::span<uint8_t, get_byte_len()> bytes) const
-  {
-    raccoon_serialization::encode_public_key<𝜅, k, 𝜈t>(this->seed, this->t, bytes);
-  }
+  constexpr void to_bytes(std::span<uint8_t, get_byte_len()> bytes) const { raccoon_serialization::encode_public_key<𝜅, k, 𝜈t>(this->seed, this->t, bytes); }
 
   // Given a byte serialized public key, this routine helps in deserializing it, producing components (seed, t).
-  static inline constexpr pkey_t from_bytes(std::span<const uint8_t, get_byte_len()> bytes)
+  static constexpr pkey_t from_bytes(std::span<const uint8_t, get_byte_len()> bytes)
   {
     pkey_t<𝜅, k, 𝜈t> pkey{};
     raccoon_serialization::decode_public_key<𝜅, k, 𝜈t>(bytes, pkey.get_seed(), pkey.get_t());
