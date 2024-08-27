@@ -97,6 +97,10 @@ I've collected a few benchmark run results, in JSON format, for sake of future b
   - (a) [Benchmark result on Linux_6.8.0-41-generic_x86_64 with g++-14](./bench_result_on_Linux_6.8.0-41-generic_x86_64_with_g++_14.json)
   - (b) [Benchmark result on Linux_6.8.0-41-generic_x86_64 with clang++-17.0.6](./bench_result_on_Linux_6.8.0-41-generic_x86_64_with_clang++_17.0.6.json)
 
+2) On Cortex-A72 i.e. Raspberry Pi 4B
+  - (a) [Benchmark result on 6.6.33-2-MANJARO-RPI4_aarch64 with g++-12.1.0](./bench_result_on_Linux_6.6.33-2-MANJARO-RPI4_aarch64_with_g++_12.1.0.json)
+  - (b) [Benchmark result on 6.6.33-2-MANJARO-RPI4_aarch64 with clang++-16.0.6](./bench_result_on_Linux_6.6.33-2-MANJARO-RPI4_aarch64_with_clang++_16.0.6.json)
+
 Benchmark comparison of `1(a)` vs. `1(b)`.
 
 > [!NOTE] 
