@@ -29,6 +29,8 @@ jobs:
         popd
         popd
         popd
+    - name: Bump up stack size to ~16MB
+      run: ulimit -s 16384
     - name: Execute Tests on ${{matrix.os}}, compiled with ${{matrix.compiler}}
       run: CXX=${{matrix.compiler}} make -j
     - name: Execute Tests with AddressSanitizer, in DEBUG mode, on ${{matrix.os}}, compiled with ${{matrix.compiler}}
