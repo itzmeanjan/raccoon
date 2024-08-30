@@ -30,9 +30,10 @@ jobs:
         popd
         popd
     - name: Bump up stack size to ~64MB
+      if: ${{matrix.os == 'ubuntu-latest'}}
       run: ulimit -s 65536
     - name: Execute Tests on ${{matrix.os}}, compiled with ${{matrix.compiler}}
-      run: ulimit -s; CXX=${{matrix.compiler}} make -j
+      run: CXX=${{matrix.compiler}} make -j
     - name: Execute Tests with AddressSanitizer, in DEBUG mode, on ${{matrix.os}}, compiled with ${{matrix.compiler}}
       run: CXX=${{matrix.compiler}} make debug_asan_test -j
     - name: Execute Tests with AddressSanitizer, in RELEASE mode, on ${{matrix.os}}, compiled with ${{matrix.compiler}}
