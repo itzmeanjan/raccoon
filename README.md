@@ -56,9 +56,13 @@ cmake version 3.28.3
 For ensuring functional correctness of this Raccoon post-quantum digital signature scheme's library implemenation, issue
 
 ```bash
-make -j            # Run tests without any sort of sanitizers
-make asan_test -j  # Run tests with AddressSanitizer enabled
-make ubsan_test -j # Run tests with UndefinedBehaviourSanitizer enabled
+# You can switch to non-default compiler, by setting variable `CXX` i.e. invoke like `$ CXX=clang++ make -j`.
+#
+make -j                    # Run tests without any sort of sanitizers
+make debug_asan_test -j    # Run tests with AddressSanitizer enabled, with `-O1`
+make release_asan_test -j  # Run tests with AddressSanitizer enabled, with `-O3 -march=native`
+make debug_ubsan_test -j   # Run tests with UndefinedBehaviourSanitizer enabled, with `-O1`
+make release_ubsan_test -j # Run tests with UndefinedBehaviourSanitizer enabled, with `-O3 -march=native`
 ```
 
 ```bash
