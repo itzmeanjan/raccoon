@@ -85,9 +85,7 @@ static constexpr auto ζ_EXP = []() {
 }();
 
 // Compile-time compute table holding negated powers of ζ, which is used for computing iNTT over degree-511 polynomial s.t. coefficients ∈ Zq.
-static consteval std::array<field::zq_t, N>
-compute_neg_powers_of_ζ()
-{
+static constexpr auto ζ_NEG_EXP = []() {
   std::array<field::zq_t, N> res;
 
   for (size_t i = 0; i < N; i++) {
@@ -95,10 +93,7 @@ compute_neg_powers_of_ζ()
   }
 
   return res;
-}
-
-// Precomputed table of negated powers of ζ, used when computing iNTT.
-static constexpr auto ζ_NEG_EXP = compute_neg_powers_of_ζ();
+}();
 
 // Degree 511 polynomial, defined over Zq
 struct alignas(32) poly_t
@@ -108,7 +103,7 @@ private:
 
   // Reduces input `x` modulo `q`, s.t. `x` ∈ [0, 2*q).
   template<uint64_t q>
-  static constexpr uint64_t reduce_once_mod(const uint64_t x)
+  static forceinline constexpr uint64_t reduce_once_mod(const uint64_t x)
   {
     const auto t = x - q;
     const auto mask = -(t >> 63);

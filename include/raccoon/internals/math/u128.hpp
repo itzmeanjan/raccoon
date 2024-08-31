@@ -18,8 +18,8 @@ struct u128_t
 {
 private:
 #ifdef __SIZEOF_INT128__
-  __extension__ using uint128 = unsigned __int128;
-  uint128 data = 0;
+  __extension__ using u128 = unsigned __int128;
+  u128 data = 0;
 #else
   uint64_t hi = 0;
   uint64_t lo = 0;
@@ -87,7 +87,7 @@ public:
 
 // Explicit constructor, initializes with provided value.
 #ifdef __SIZEOF_INT128__
-  forceinline constexpr u128_t(const uint128 v) { this->data = v; }
+  forceinline constexpr u128_t(const u128 v) { this->data = v; }
 #else
   forceinline constexpr u128_t(const uint64_t hi, const uint64_t lo)
   {
@@ -104,7 +104,7 @@ public:
     u128_t res{};
 
 #ifdef __SIZEOF_INT128__
-    res.data = static_cast<uint128>(v);
+    res.data = static_cast<u128>(v);
 #else
     res.hi = 0;
     res.lo = static_cast<uint64_t>(v);
