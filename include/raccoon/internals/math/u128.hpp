@@ -6,7 +6,15 @@
 #include <type_traits>
 #include <utility>
 
-#ifndef __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
+#undef USE_INT128_TYPE
+#endif
+
+#if defined __GNUG__ && defined __SIZEOF_INT128__ && defined PREFER_INT128_COMPILER_EXTENSION_TYPE
+#define USE_INT128_TYPE
+#endif
+
+#ifndef USE_INT128_TYPE
 #include "u64.hpp"
 #include <limits>
 #endif
@@ -17,7 +25,7 @@ namespace u128 {
 struct u128_t
 {
 private:
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
   __extension__ using u128 = unsigned __int128;
   u128 data = 0;
 #else
@@ -31,7 +39,7 @@ private:
   // Collects inspiration from https://github.com/abseil/abseil-cpp/blob/c14dfbf9c1759c39bf4343b9e54a43975fbba930/absl/numeric/int128.cc#L34-L48.
   forceinline constexpr size_t get_bit_index_of_set_msb() const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     const auto hi = static_cast<uint64_t>(this->data >> 64);
     const auto lo = static_cast<uint64_t>(this->data >> 0);
 
@@ -86,7 +94,7 @@ public:
   forceinline constexpr u128_t() = default;
 
 // Explicit constructor, initializes with provided value.
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
   forceinline constexpr u128_t(const u128 v) { this->data = v; }
 #else
   forceinline constexpr u128_t(const uint64_t hi, const uint64_t lo)
@@ -103,7 +111,7 @@ public:
   {
     u128_t res{};
 
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     res.data = static_cast<u128>(v);
 #else
     res.hi = 0;
@@ -118,7 +126,7 @@ public:
   forceinline constexpr T to() const
     requires(std::is_unsigned_v<T>)
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return static_cast<T>(this->data);
 #else
     return static_cast<T>(this->lo);
@@ -128,7 +136,7 @@ public:
   // Modulo addition
   forceinline constexpr u128_t operator+(const u128_t rhs) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(this->data + rhs.data);
 #else
     constexpr uint64_t u64_max = std::numeric_limits<uint64_t>::max();
@@ -150,7 +158,7 @@ public:
   // Modulo negation
   forceinline constexpr u128_t operator-() const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(-this->data);
 #else
     const uint64_t lo = -this->lo;
@@ -170,7 +178,7 @@ public:
   // Modulo multiplication
   forceinline constexpr u128_t operator*(const u128_t rhs) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(this->data * rhs.data);
 #else
     const auto lo128 = u64::mul_full_u64(this->lo, rhs.lo);
@@ -208,7 +216,7 @@ public:
   // Left shift by n -bits s.t. n < 128
   forceinline constexpr u128_t operator<<(const size_t n) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(this->data << n);
 #else
     if (n < 64ul) {
@@ -232,7 +240,7 @@ public:
   // Right shift by n -bits s.t. n < 128
   forceinline constexpr u128_t operator>>(const size_t n) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(this->data >> n);
 #else
     if (n < 64ul) {
@@ -258,7 +266,7 @@ public:
   // Returns true if and only if, lhs > rhs
   forceinline constexpr bool operator>(const u128_t rhs) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return this->data > rhs.data;
 #else
     const bool flg0 = this->hi > rhs.hi;
@@ -277,7 +285,7 @@ public:
   // Returns true if and only if, lhs == rhs
   forceinline constexpr bool operator==(const u128_t rhs) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return this->data == rhs.data;
 #else
     return (this->hi == rhs.hi) && (this->lo == rhs.lo);
@@ -293,7 +301,7 @@ public:
   // Bitwise XOR operation
   forceinline constexpr u128_t operator|(const u128_t rhs) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(this->data | rhs.data);
 #else
     return u128_t(this->hi | rhs.hi, this->lo | rhs.lo);
@@ -306,7 +314,7 @@ public:
   // Bitwise AND operation
   forceinline constexpr u128_t operator&(const u128_t rhs) const
   {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
     return u128_t(this->data & rhs.data);
 #else
     return u128_t(this->hi & rhs.hi, this->lo & rhs.lo);

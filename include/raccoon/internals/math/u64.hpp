@@ -3,6 +3,14 @@
 #include <cstdint>
 #include <utility>
 
+#ifdef USE_INT128_TYPE
+#undef USE_INT128_TYPE
+#endif
+
+#if defined __GNUG__ && defined __SIZEOF_INT128__ && defined PREFER_INT128_COMPILER_EXTENSION_TYPE
+#define USE_INT128_TYPE
+#endif
+
 namespace u64 {
 
 // Given two unsigned 64 -bit operands, this function computes a full 128 -bit multiplication result such that return value
@@ -10,7 +18,7 @@ namespace u64 {
 forceinline constexpr std::pair<uint64_t, uint64_t>
 mul_full_u64(const uint64_t lhs, const uint64_t rhs)
 {
-#if defined __GNUG__ && defined __SIZEOF_INT128__
+#ifdef USE_INT128_TYPE
 
   __extension__ using uint128 = unsigned __int128;
 
