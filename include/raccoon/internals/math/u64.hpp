@@ -10,7 +10,7 @@ namespace u64 {
 forceinline constexpr std::pair<uint64_t, uint64_t>
 mul_full_u64(const uint64_t lhs, const uint64_t rhs)
 {
-#ifdef __SIZEOF_INT128__
+#if defined __GNUG__ && defined __SIZEOF_INT128__
 
   __extension__ using uint128 = unsigned __int128;
 
