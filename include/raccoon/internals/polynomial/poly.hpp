@@ -48,48 +48,49 @@ bit_rev(const size_t v)
   return v_rev;
 }
 
-// Compile-time computes ζ ^ i | 0 <= i < N/2
-static constexpr auto ζ_EXP_first = []() {
-  std::array<field::zq_t, N / 2> res{};
+template<size_t n>
+constexpr auto
+gen_powers_of_ζ(const size_t begin_at)
+{
+  std::array<field::zq_t, n> res{};
 
-  for (size_t i = 0; i < res.size(); i++) {
-    res[i] = ζ ^ bit_rev<LOG2N>(i);
+  const size_t till = begin_at + n;
+  for (size_t i = begin_at; i < till; i++) {
+    res[n - (till - i)] = ζ ^ bit_rev<LOG2N>(i);
   }
 
   return res;
-}();
+};
 
-// Compile-time computes ζ ^ i | N/2 <= i < N
-static constexpr auto ζ_EXP_last = []() {
-  std::array<field::zq_t, ζ_EXP_first.size()> res{};
-
-  for (size_t i = ζ_EXP_first.size(); i < 2 * ζ_EXP_first.size(); i++) {
-    res[i - ζ_EXP_first.size()] = ζ ^ bit_rev<LOG2N>(i);
-  }
-
-  return res;
-}();
+static constexpr auto POWERS_OF_ζ_first_quarter = gen_powers_of_ζ<N / 4>(0);
+static constexpr auto POWERS_OF_ζ_second_quarter = gen_powers_of_ζ<N / 4>(N / 4);
+static constexpr auto POWERS_OF_ζ_third_quarter = gen_powers_of_ζ<N / 4>(2 * (N / 4));
+static constexpr auto POWERS_OF_ζ_fourth_quarter = gen_powers_of_ζ<N / 4>(3 * (N / 4));
 
 // Compile-time compute table holding powers of ζ, which is used for computing NTT over degree-511 polynomial s.t. coefficients ∈ Zq.
-static constexpr auto ζ_EXP = []() {
+static constexpr auto POWERS_OF_ζ = []() {
   std::array<field::zq_t, N> res{};
-  auto _res = std::span(res);
+  auto res_span = std::span(res);
 
-  auto res_first = _res.subspan<0, ζ_EXP_first.size()>();
-  auto res_last = _res.subspan<ζ_EXP_first.size(), ζ_EXP_last.size()>();
+  auto res_first_quarter = res_span.subspan<0, N / 4>();
+  auto res_second_quarter = res_span.subspan<N / 4, N / 4>();
+  auto res_third_quarter = res_span.subspan<2 * (N / 4), N / 4>();
+  auto res_fourth_quarter = res_span.subspan<3 * (N / 4), N / 4>();
 
-  std::copy(ζ_EXP_first.begin(), ζ_EXP_first.end(), res_first.begin());
-  std::copy(ζ_EXP_last.begin(), ζ_EXP_last.end(), res_last.begin());
+  std::copy(POWERS_OF_ζ_first_quarter.begin(), POWERS_OF_ζ_first_quarter.end(), res_first_quarter.begin());
+  std::copy(POWERS_OF_ζ_second_quarter.begin(), POWERS_OF_ζ_second_quarter.end(), res_second_quarter.begin());
+  std::copy(POWERS_OF_ζ_third_quarter.begin(), POWERS_OF_ζ_third_quarter.end(), res_third_quarter.begin());
+  std::copy(POWERS_OF_ζ_fourth_quarter.begin(), POWERS_OF_ζ_fourth_quarter.end(), res_fourth_quarter.begin());
 
   return res;
 }();
 
 // Compile-time compute table holding negated powers of ζ, which is used for computing iNTT over degree-511 polynomial s.t. coefficients ∈ Zq.
-static constexpr auto ζ_NEG_EXP = []() {
+static constexpr auto NEG_POWERS_OF_ζ = []() {
   std::array<field::zq_t, N> res;
 
   for (size_t i = 0; i < N; i++) {
-    res[i] = -ζ_EXP[i];
+    res[i] = -POWERS_OF_ζ[i];
   }
 
   return res;
@@ -328,7 +329,7 @@ public:
 
       for (size_t start = 0; start < this->num_coeffs(); start += lenx2) {
         const size_t k_now = k_beg + (start >> (l + 1));
-        const field::zq_t ζ_exp = ζ_EXP[k_now];
+        const field::zq_t ζ_exp = POWERS_OF_ζ[k_now];
 
 #if (not defined __clang__) && (defined __GNUG__)
 #pragma GCC unroll 4
@@ -360,7 +361,7 @@ public:
 
       for (size_t start = 0; start < this->num_coeffs(); start += lenx2) {
         const size_t k_now = k_beg - (start >> (l + 1));
-        const field::zq_t neg_ζ_exp = ζ_NEG_EXP[k_now];
+        const field::zq_t neg_ζ_exp = NEG_POWERS_OF_ζ[k_now];
 
 #if (not defined __clang__) && (defined __GNUG__)
 #pragma GCC unroll 2
