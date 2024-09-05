@@ -45,14 +45,18 @@ private:
 
     if (hi > 0) {
       return 127ul - std::countl_zero(hi);
-    } else {
+    } else if (lo > 0) {
       return 63ul - std::countl_zero(lo);
+    } else {
+      return 0;
     }
 #else
     if (this->hi > 0) {
       return 127ul - std::countl_zero(this->hi);
-    } else {
+    } else if (this->lo > 0) {
       return 63ul - std::countl_zero(this->lo);
+    } else {
+      return 0;
     }
 #endif
   }
@@ -181,10 +185,10 @@ public:
 #ifdef USE_INT128_TYPE
     return u128_t(this->data * rhs.data);
 #else
-    const auto lo128 = u64::mul_full_u64(this->lo, rhs.lo);
+    const auto [loxlo_hi64, loxlo_lo64] = u64::mul_full_u64(this->lo, rhs.lo);
 
-    const uint64_t lo = lo128.second;
-    const uint64_t hi = this->lo * rhs.hi + this->hi * rhs.lo + lo128.first;
+    const uint64_t lo = loxlo_lo64;
+    const uint64_t hi = (this->lo * rhs.hi) + (this->hi * rhs.lo) + loxlo_hi64;
 
     return u128_t(hi, lo);
 #endif
@@ -219,17 +223,24 @@ public:
 #ifdef USE_INT128_TYPE
     return u128_t(this->data << n);
 #else
-    if (n < 64ul) {
-      const uint64_t moved_bits = this->lo >> (64ul - n);
-      const uint64_t hi = (this->hi << n) | moved_bits;
-      const uint64_t lo = this->lo << n;
+    switch (n) {
+      case 0:
+        return *this;
+      case 128:
+        return u128_t(0, 0);
+      default:
+        if (n < 64ul) {
+          const uint64_t moved_bits = this->lo >> (64ul - n);
+          const uint64_t hi = (this->hi << n) | moved_bits;
+          const uint64_t lo = this->lo << n;
 
-      return u128_t(hi, lo);
-    } else if (n == 64ul) {
-      return u128_t(this->lo, 0ul);
-    } else {
-      const uint64_t moved_bits = this->lo << (n - 64ul);
-      return u128_t(moved_bits, 0ul);
+          return u128_t(hi, lo);
+        } else if (n == 64ul) {
+          return u128_t(this->lo, 0ul);
+        } else {
+          const uint64_t moved_bits = this->lo << (n - 64ul);
+          return u128_t(moved_bits, 0ul);
+        }
     }
 #endif
   }
@@ -243,25 +254,38 @@ public:
 #ifdef USE_INT128_TYPE
     return u128_t(this->data >> n);
 #else
-    if (n < 64ul) {
-      const uint64_t mask = (1ul << n) - 1;
-      const uint64_t moved_bits = this->hi & mask;
+    switch (n) {
+      case 0:
+        return *this;
+      case 128:
+        return u128_t(0, 0);
+      default:
+        if (n < 64ul) {
+          const uint64_t mask = (1ul << n) - 1;
+          const uint64_t moved_bits = this->hi & mask;
 
-      const uint64_t hi = this->hi >> n;
-      const uint64_t lo = (this->lo >> n) | (moved_bits) << (64ul - n);
+          const uint64_t hi = this->hi >> n;
+          const uint64_t lo = (this->lo >> n) | (moved_bits) << (64ul - n);
 
-      return u128_t(hi, lo);
-    } else if (n == 64ul) {
-      return u128_t(0ul, this->hi);
-    } else {
-      const uint64_t moved_bits = this->hi >> (n - 64ul);
-      return u128_t(0ul, moved_bits);
+          return u128_t(hi, lo);
+        } else if (n == 64ul) {
+          return u128_t(0ul, this->hi);
+        } else {
+          const uint64_t moved_bits = this->hi >> (n - 64ul);
+          return u128_t(0ul, moved_bits);
+        }
     }
 #endif
   }
 
   // Compound operation, right shifting by n -bits s.t. n < 128
   forceinline constexpr void operator>>=(const size_t n) { *this = *this >> n; }
+
+  // Rotate left by n -bits s.t. n <= 128.
+  forceinline constexpr u128_t rotl(const size_t n) const { return ((*this) << n) | ((*this) >> ((sizeof(u128_t) * 8) - n)); }
+
+  // Rotate right by n -bits s.t. n <= 128.
+  forceinline constexpr u128_t rotr(const size_t n) const { return ((*this) >> n) | ((*this) << ((sizeof(u128_t) * 8) - n)); }
 
   // Returns true if and only if, lhs > rhs
   forceinline constexpr bool operator>(const u128_t rhs) const
@@ -298,7 +322,7 @@ public:
   // Returns true if and only if, lhs <= rhs
   forceinline constexpr bool operator<=(const u128_t rhs) const { return (*this < rhs) || (*this == rhs); }
 
-  // Bitwise XOR operation
+  // Bitwise OR operation
   forceinline constexpr u128_t operator|(const u128_t rhs) const
   {
 #ifdef USE_INT128_TYPE
@@ -308,7 +332,7 @@ public:
 #endif
   }
 
-  // Compound bitwise XOR operation
+  // Compound bitwise OR operation
   forceinline constexpr void operator|=(const u128_t rhs) { *this = *this | rhs; }
 
   // Bitwise AND operation
