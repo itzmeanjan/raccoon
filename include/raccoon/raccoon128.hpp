@@ -6,27 +6,27 @@
 namespace raccoon128 {
 
 // Raccoon-128 parameters, taken from table 2 of Raccoon specification, offering NIST Post-Quantum security strength category 1.
-constexpr size_t 𝜅 = 128;
-constexpr size_t k = 5;
-constexpr size_t l = 4;
-constexpr size_t 𝜈w = 44;
-constexpr size_t 𝜈t = 42;
-constexpr size_t 𝜔 = 19;
-constexpr uint64_t Binf = 41954689765971ul;
-constexpr uint64_t B22 = 14656575897ul;
+static constexpr size_t 𝜅 = 128;
+static constexpr size_t k = 5;
+static constexpr size_t l = 4;
+static constexpr size_t 𝜈w = 44;
+static constexpr size_t 𝜈t = 42;
+static constexpr size_t 𝜔 = 19;
+static constexpr uint64_t Binf = 41954689765971ul;
+static constexpr uint64_t B22 = 14656575897ul;
 
-constexpr std::array<size_t, 6> rep{ 8, 4, 2, 4, 2, 4 };
-constexpr std::array<size_t, 6> 𝑢t{ 6, 6, 6, 5, 5, 4 };
-constexpr std::array<size_t, 6> 𝑢w{ 41, 41, 41, 40, 40, 39 };
+static constexpr std::array<size_t, 6> rep{ 8, 4, 2, 4, 2, 4 };
+static constexpr std::array<size_t, 6> 𝑢t{ 6, 6, 6, 5, 5, 4 };
+static constexpr std::array<size_t, 6> 𝑢w{ 41, 41, 41, 40, 40, 39 };
 
 // Raccoon-128 seed byte length, used in key generation.
-constexpr size_t SEED_BYTE_LEN = 𝜅 / std::numeric_limits<uint8_t>::digits;
+static constexpr size_t SEED_BYTE_LEN = 𝜅 / std::numeric_limits<uint8_t>::digits;
 
 // Raccoon-128 public key byte length.
-constexpr size_t PKEY_BYTE_LEN = raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>();
+static constexpr size_t PKEY_BYTE_LEN = raccoon_utils::get_pkey_byte_len<𝜅, k, raccoon_poly::N, 𝜈t>();
 
 // Raccoon-128 signature byte length.
-constexpr size_t SIG_BYTE_LEN = 11524ul;
+static constexpr size_t SIG_BYTE_LEN = 11524ul;
 
 // Raccoon-128 Public Key.
 struct raccoon128_pkey_t
