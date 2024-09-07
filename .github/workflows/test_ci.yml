@@ -14,6 +14,8 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         compiler: [g++, clang++]
         cxx_defs: [-DPREFER_INT128_COMPILER_EXTENSION_TYPE, '']
+        build_type: [debug, release]
+        test_type: ['standard', asan, ubsan]
 
     steps:
     - uses: actions/checkout@v4
@@ -31,30 +33,13 @@ jobs:
         popd
         popd
     - name: Execute Tests on ${{matrix.os}}, compiled with ${{matrix.compiler}}
+      if: ${{matrix.test_type == 'standard'}}
       run: CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make -j
 
-    - name: Execute Tests with AddressSanitizer, in DEBUG mode, on Ubuntu, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'ubuntu-latest'}}
-      run: ulimit -s 65536 && CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make debug_asan_test -j
-    - name: Execute Tests with AddressSanitizer, in RELEASE mode, on Ubuntu, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'ubuntu-latest'}}
-      run: ulimit -s 65536 && CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make release_asan_test -j
-    - name: Execute Tests with UndefinedBehaviourSanitizer, in DEBUG mode, on Ubuntu, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'ubuntu-latest'}}
-      run: ulimit -s 65536 && CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make debug_ubsan_test -j
-    - name: Execute Tests with UndefinedBehaviourSanitizer, in RELEASE mode, on Ubuntu, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'ubuntu-latest'}}
-      run: ulimit -s 65536 && CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make release_ubsan_test -j
+    - name: Execute Tests with ${{matrix.test_type}}, in ${{matrix.build_type}} mode, on Ubuntu, compiled with ${{matrix.compiler}}
+      if: ${{matrix.os == 'ubuntu-latest' && matrix.test_type != 'standard'}}
+      run: ulimit -s 65536 && CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make ${{matrix.build_type}}_${{matrix.test_type}}_test -j
 
-    - name: Execute Tests with AddressSanitizer, in DEBUG mode, on MacOS, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'macos-latest'}}
-      run: CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make debug_asan_test -j
-    - name: Execute Tests with AddressSanitizer, in RELEASE mode, on MacOS, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'macos-latest'}}
-      run: CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make release_asan_test -j
-    - name: Execute Tests with UndefinedBehaviourSanitizer, in DEBUG mode, on MacOS, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'macos-latest'}}
-      run: CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make debug_ubsan_test -j
-    - name: Execute Tests with UndefinedBehaviourSanitizer, in RELEASE mode, on MacOS, compiled with ${{matrix.compiler}}
-      if: ${{matrix.os == 'macos-latest'}}
-      run: CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make release_ubsan_test -j
+    - name: Execute Tests with ${{matrix.test_type}}, in ${{matrix.build_type}} mode, on MacOS, compiled with ${{matrix.compiler}}
+      if: ${{matrix.os == 'macos-latest' && matrix.test_type != 'standard'}}
+      run: CXX=${{matrix.compiler}} CXX_DEFS=${{matrix.cxx_defs}} make ${{matrix.build_type}}_${{matrix.test_type}}_test -j
